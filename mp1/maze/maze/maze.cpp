@@ -20,9 +20,7 @@ struct adjListNode{
 
 
 // parameter: filename of the .txt file for target maze
-void initGraph(string fileName, map<int, adjListNode*>& graphVertices){
-
-	int mazeHeight = 0, mazeWidth = 0;
+void initGraph(string fileName, map<int, adjListNode*>& graphVertices, vector<pair<int,int>>& dotPositions, pair<int, int>& startPosition, int& mazeWidth, int& mazeHeight){
 
 	// read from maze text file line by line
 	vector<string> fileLines;
@@ -36,6 +34,8 @@ void initGraph(string fileName, map<int, adjListNode*>& graphVertices){
 		}
 		myfile.close();
 	}
+
+	// store maze width and height
 	mazeWidth = line.size();
 	mazeHeight = fileLines.size();
 
@@ -65,12 +65,23 @@ void initGraph(string fileName, map<int, adjListNode*>& graphVertices){
 	
 	queue<int> q;
 	q.push(currGrid);
+	visited[currGrid] = true;
 
 	while (!q.empty()){
 		currGrid = q.front();
 		curr_x = currGrid%mazeWidth;
 		curr_y = currGrid / mazeWidth;
-		visited[currGrid] = true;
+		//visited[currGrid] = true;
+
+		// store its coordinate if the current node is a starting point or a dot
+		if (mazeText[curr_y][curr_x] == 'P'){
+			pair<int, int> start(curr_x, curr_y);
+			startPosition = start;
+		}
+		else if(mazeText[curr_y][curr_x] == '.'){
+			pair<int, int> dot(curr_x, curr_y);
+			dotPositions.push_back(dot);
+		}
 
 		// initialize adj list for current node
 		adjListNode* listHead = new adjListNode();
@@ -81,28 +92,39 @@ void initGraph(string fileName, map<int, adjListNode*>& graphVertices){
 			curr->next = new adjListNode();
 			curr = curr->next;
 			curr->nodeId = currGrid + 1;
-			if (!visited[currGrid + 1]) q.push(currGrid + 1);
+			if (!visited[currGrid + 1]){
+				visited[currGrid + 1] = true;
+				q.push(currGrid + 1);
+			}
 		}
 
 		if (curr_x > 0 && mazeText[curr_y][curr_x - 1] != '%'){
 			curr->next = new adjListNode();
 			curr = curr->next;
 			curr->nodeId = currGrid - 1;
-			if (!visited[currGrid - 1]) q.push(currGrid - 1);
+			if (!visited[currGrid - 1]){
+				visited[currGrid - 1] = true;
+				q.push(currGrid - 1);
+			}
 		}
 
 		if (curr_y > 0 && mazeText[curr_y - 1][curr_x] != '%'){
 			curr->next = new adjListNode();
 			curr = curr->next;
 			curr->nodeId = currGrid - mazeWidth;
-			if (!visited[currGrid - mazeWidth]) q.push(currGrid - mazeWidth);
+			if (!visited[currGrid - mazeWidth]){
+				visited[currGrid - mazeWidth] = true;
+				q.push(currGrid - mazeWidth);
+			}
 		}
-
 		if (curr_y < mazeHeight - 1 && mazeText[curr_y + 1][curr_x] != '%'){
 			curr->next = new adjListNode();
 			curr = curr->next;
 			curr->nodeId = currGrid + mazeWidth;
-			if (!visited[currGrid + mazeWidth]) q.push(currGrid + mazeWidth);
+			if (!visited[currGrid + mazeWidth]){
+				visited[currGrid + mazeWidth] = true;
+				q.push(currGrid + mazeWidth);
+			}
 		}
 
 		// update adjlist of current node
@@ -116,6 +138,9 @@ void initGraph(string fileName, map<int, adjListNode*>& graphVertices){
 int main(){
 	// testing graph construction with medium maze
 	map<int, adjListNode*> graphVertices;
-	initGraph("mediumMaze.txt", graphVertices);
+	vector<pair<int,int>> dotPositions;
+	pair<int, int> startPosition;
+	int mazeWidth, mazeHeight;
+	initGraph("mediumMaze.txt", graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight);
 	return 0;
 }

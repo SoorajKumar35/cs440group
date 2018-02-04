@@ -1,26 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <utility>
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <queue>
-#include <map>
-
+#include "search.h"
 using namespace std;
 
-
-struct adjListNode{
-	// node id is the index of the node in the flattend maze matrix (y * width + x)
-	int nodeId;
-	struct adjListNode* next;
-};
-
-
-
 // parameter: filename of the .txt file for target maze
-void initGraph(string fileName, map<int, adjListNode*>& graphVertices, vector<pair<int,int>>& dotPositions, pair<int, int>& startPosition, int& mazeWidth, int& mazeHeight){
+void initGraph(string fileName, map<int, adjListNode*>& graphVertices, vector<pair<int,int> >& dotPositions, pair<int, int>& startPosition, int& mazeWidth, int& mazeHeight,
+	vector<vector<char> >& mazeText){
 
 	// read from maze text file line by line
 	vector<string> fileLines;
@@ -35,12 +18,14 @@ void initGraph(string fileName, map<int, adjListNode*>& graphVertices, vector<pa
 		myfile.close();
 	}
 
+	// cout << "here?" << endl;
 	// store maze width and height
 	mazeWidth = line.size();
 	mazeHeight = fileLines.size();
 
+	// cout << "get the mazeWidth and mazeHeight?" <<endl;
 	// store maze text into 2-D vector, indexing is column major
-	vector<vector<char>> mazeText;
+	// vector<vector<char> > mazeText;
 	for (int i = 0; i < mazeHeight; i++){
 		vector<char> currLine;
 		for (size_t j = 0; j < mazeWidth; j++){
@@ -53,13 +38,18 @@ void initGraph(string fileName, map<int, adjListNode*>& graphVertices, vector<pa
 	for (int i = 0; i < mazeHeight*mazeWidth; i++){
 		visited.push_back(false);
 	}
-
+	// cout << "after the bool array" << endl;
 	
 	// find the first empty grid in the maze to start graph traversal
-	int currGrid = 0;
+	int currGrid = 1;
+	// cout << currGrid /mazeWidth;
+	// cout << currGrid % mazeWidth;
+	// cout << "before while loop currgrid";
 	while (mazeText[currGrid / mazeWidth][currGrid%mazeWidth] == '%'){
+		//cout << currGrid << endl;
 		currGrid++;
 	}
+	// cout << "before curr_X and curr_y assignment" << endl;
 	int curr_x = currGrid%mazeWidth;
 	int curr_y = currGrid/mazeWidth;
 	
@@ -67,10 +57,12 @@ void initGraph(string fileName, map<int, adjListNode*>& graphVertices, vector<pa
 	q.push(currGrid);
 	visited[currGrid] = true;
 
+	// cout << "befo the init while loop? " << endl;
 	while (!q.empty()){
 		currGrid = q.front();
 		curr_x = currGrid%mazeWidth;
 		curr_y = currGrid / mazeWidth;
+
 		//visited[currGrid] = true;
 
 		// store its coordinate if the current node is a starting point or a dot
@@ -133,14 +125,56 @@ void initGraph(string fileName, map<int, adjListNode*>& graphVertices, vector<pa
 		// pop processed node
 		q.pop();
 	}
+	for(auto iter: graphVertices)
+	{
+		adjListNode curr = iter -> second;
+		curr.mahattan_distance = std::abs((dotPositions[0]->first - curr.nodeId%mazeWidth) + (dotPositions[0]->second - curr_y));
+		iter->second = curr;
+	}
 }
+
+
 
 int main(){
 	// testing graph construction with medium maze
 	map<int, adjListNode*> graphVertices;
-	vector<pair<int,int>> dotPositions;
+	vector<pair<int,int> > dotPositions;
 	pair<int, int> startPosition;
 	int mazeWidth, mazeHeight;
-	initGraph("mediumMaze.txt", graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight);
+	vector<vector<char> > mazeText;
+	initGraph("mediumMaze.txt", graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight,mazeText);
+	//Declare a search data structure that can execute all given searches
+	Search new_Search(graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight, mazeText);
+
+	if(dotPositions.size() < 2)
+	{
+		// Here we execute the 1.1 search algorithms.
+		// cout << "is it in the search or befo?" << endl;
+		//new_Search.DFS_search(); // Execute DFS search
+
+		//new_Search.BFS_search();
+
+		new_Search.greedy_search();
+
+	}
+
 	return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

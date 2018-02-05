@@ -42,13 +42,16 @@ void Search::DFS_search()
 	while(!frontier.empty())
 	{
 		steps_to_goal++;
-		// if(steps_to_goal == 50)
-			// break;
+		if(steps_to_goal == 1)
+			break;
 		// cout << "steps_to_goal: " << steps_to_goal << endl;
 		int current_vertex = frontier.top();
 		visited[current_vertex] = true;
 		frontier.pop();
 		adjListNode * head_curr_vertex = graphVertices[current_vertex];
+		cout << "current_vertex: " << current_vertex << endl; 
+		cout << "adjListNode * head_curr_vertex = graphVertices[current_vertex];" << endl;
+		cout << "head_curr_vertex -> nodeId: " << head_curr_vertex -> nodeId << endl;
 		//vector<int> neighbors[NUM_NEIGHBORS];
 		int curr_x = current_vertex% this->mazeWidth;
 		int curr_y = current_vertex / this->mazeWidth;
@@ -56,7 +59,7 @@ void Search::DFS_search()
 		if( (curr_x != this -> startPosition.first) || (curr_y != this->startPosition.second))
 		{
 			// cout << "I got to this point" << endl;
-			mazeText[curr_y][curr_x] = 's';
+			mazeText[curr_y][curr_x] = '.';
 		}
 		if( (curr_x == dotx) && (curr_y == doty) )
 		{
@@ -84,6 +87,7 @@ void Search::DFS_search()
 			}
 			else
 			{
+				cout << "moving to the next node" << endl;
 				head_curr_vertex = head_curr_vertex -> next;
  			}
  			nodes_expanded++;	
@@ -123,7 +127,7 @@ void Search::BFS_search()
 
 		if( (curr_x != this -> startPosition.first) || (curr_y != this->startPosition.second))
 		{
-			mazeText[curr_y][curr_x] = 's';
+			mazeText[curr_y][curr_x] = '.';
 		}
 		if( (curr_x == dotx) && (curr_y == doty) )
 		{
@@ -166,10 +170,13 @@ void Search::greedy_search()
 	// test_pq(open);
 
 	int st_linear_idx = this->startPosition.second*this->mazeWidth + this->startPosition.first%this->mazeWidth;
-	open.push(graphVertices[st_linear_idx]);
+	open.push(*(graphVertices[st_linear_idx]));
 
 	bool visited[this->mazeWidth * this->mazeHeight];
 	std::memset(visited,false,this->mazeWidth * this->mazeHeight);
+
+	int dotx = this->dotPositions[0].first;
+	int doty = this->dotPositions[0].second;
 
 	int steps_to_goal = -1;
 	int nodes_expanded = 0;
@@ -178,20 +185,25 @@ void Search::greedy_search()
 	while(!open.empty())
 	{
 		steps_to_goal++;
+		// if(steps_to_goal == 150)
+		// {
+		// 	break;
+		// }
+		cout << "Steps to goal: " << steps_to_goal << endl;
 
 		//Remove the node with the lowest mahattan distance
 		adjListNode curr = open.top();
 		open.pop();
+		// cout << "curr.nodeId: " << curr.nodeId << endl;
+		// while(!open.empty())
+		// {
+		// 	open.pop();
+		// }
 
 		int curr_x = curr.nodeId%this->mazeWidth;
 		int curr_y = curr.nodeId/this->mazeWidth;
 
 		visited[curr.nodeId]= true;
-
-		if( (curr_x != this -> startPosition.first) || (curr_y != this->startPosition.second))
-		{
-			mazeText[curr_y][curr_x] = 's';
-		}
 
 		if( (curr_x == dotx) && (curr_y == doty) )
 		{
@@ -202,16 +214,31 @@ void Search::greedy_search()
 					std::cout << std::endl;
 				std::cout << mazeText[i/mazeWidth][i%mazeWidth];
 			}
+			std::cout << std::endl;
 			return;
 		}
 
-		adjListNode * neighbor_node = curr.next;
+		if( (curr_x != this -> startPosition.first) || (curr_y != this->startPosition.second))
+		{
+			mazeText[curr_y][curr_x] = '.';
+		}
+
+
+		adjListNode * neighbor_node = graphVertices[curr.nodeId];
+		if(neighbor_node == NULL)
+			cout << "The neighbor_node is NULL" << endl;
 
 		while(neighbor_node != NULL)
 		{
 			if(!visited[neighbor_node->nodeId])
 			{
-				open.push(neighbor_node);
+				int x = (neighbor_node -> nodeId)%mazeWidth;
+				int y = (neighbor_node -> nodeId)/mazeWidth;
+				pair<int,int> i_point(x,y);
+				pair<int,int> f_point(dotx,doty);
+
+				neighbor_node -> h_distance = mahattan_distance(i_point,f_point);
+				open.push(*neighbor_node);
 				neighbor_node = neighbor_node -> next;
 			}
 			else
@@ -222,27 +249,135 @@ void Search::greedy_search()
 		}
 
 	}
+	for(int i = 0; i < mazeWidth*mazeHeight; i++)
+	{
+		if(i%mazeWidth == 0)
+			std::cout << std::endl;
+		std::cout << mazeText[i/mazeWidth][i%mazeWidth];
+	}
+	std::cout << std::endl;
+}
+
+void Search::astar_search()
+{
+	//Create a priority queue
+	std::priority_queue<adjListNode, std::vector<adjListNode>, std::greater<adjListNode> > open;
+
+	// //Test function for the pq
+	// test_pq(open);
+
+	int st_linear_idx = this->startPosition.second*this->mazeWidth + this->startPosition.first%this->mazeWidth;
+	open.push(*(graphVertices[st_linear_idx]));
+
+	bool visited[this->mazeWidth * this->mazeHeight];
+	std::memset(visited,false,this->mazeWidth * this->mazeHeight);
+
+	int dotx = this->dotPositions[0].first;
+	int doty = this->dotPositions[0].second;
+
+	int steps_to_goal = -1;
+	int nodes_expanded = 0;
+
+	//While loop for greedy best-first search
+	while(!open.empty())
+	{
+		steps_to_goal++;
+		// if(steps_to_goal == 150)
+		// {
+		// 	break;
+		// }
+		cout << "Steps to goal: " << steps_to_goal << endl;
+
+		//Remove the node with the lowest mahattan distance
+		adjListNode curr = open.top();
+		open.pop();
+		// cout << "curr.nodeId: " << curr.nodeId << endl;
+		// while(!open.empty())
+		// {
+		// 	open.pop();
+		// }
+
+		int curr_x = curr.nodeId%this->mazeWidth;
+		int curr_y = curr.nodeId/this->mazeWidth;
+
+		visited[curr.nodeId]= true;
+
+		if( (curr_x == dotx) && (curr_y == doty) )
+		{
+			cout << "Found the dot" << endl;
+			for(int i = 0; i < mazeWidth*mazeHeight; i++)
+			{
+				if(i%mazeWidth == 0)
+					std::cout << std::endl;
+				std::cout << mazeText[i/mazeWidth][i%mazeWidth];
+			}
+			std::cout << std::endl;
+			return;
+		}
+
+		if( (curr_x != this -> startPosition.first) || (curr_y != this->startPosition.second))
+		{
+			mazeText[curr_y][curr_x] = '.';
+		}
+
+
+		adjListNode * neighbor_node = graphVertices[curr.nodeId];
+		if(neighbor_node == NULL)
+			cout << "The neighbor_node is NULL" << endl;
+
+		while(neighbor_node != NULL)
+		{
+			if(!visited[neighbor_node->nodeId])
+			{
+				int x = (neighbor_node -> nodeId)%mazeWidth;
+				int y = (neighbor_node -> nodeId)/mazeWidth;
+				pair<int,int> i_point(x,y);
+				pair<int,int> f_point(dotx,doty);
+
+				neighbor_node -> h_distance = mahattan_distance(i_point,f_point) + steps_to_goal;
+				open.push(*neighbor_node);
+				neighbor_node = neighbor_node -> next;
+			}
+			else
+			{
+				neighbor_node = neighbor_node -> next;
+ 			}
+ 			nodes_expanded++;
+		}
+
+	}
+	for(int i = 0; i < mazeWidth*mazeHeight; i++)
+	{
+		if(i%mazeWidth == 0)
+			std::cout << std::endl;
+		std::cout << mazeText[i/mazeWidth][i%mazeWidth];
+	}
+	std::cout << std::endl;
 }
 
 float Search::mahattan_distance(pair<int,int> i_point, pair<int,int> f_point)
 {
-	return -1;
+	return std::abs((i_point.first - f_point.first) + (i_point.second - f_point.second));
 }
 
+float Search::start_distance(pair<int,int> i_point, pair<int,int> f_point)
+{
+	return 0;
+}
 
 void test_pq(std::priority_queue<adjListNode, std::vector<adjListNode>, std::greater<adjListNode> > open)
 {
 	adjListNode toInsert[10];
 	for(int i = 0; i < 10; i++)
 	{
-		toInsert[i].mahattan_distance = i + 10;
+		toInsert[i].h_distance = i + 10;
 		open.push(toInsert[i]);
 	}
 
 	for(int j = 0; j < 10; j++)
 	{
 		adjListNode top = open.top();
-		cout << top.mahattan_distance << endl;
+		cout << top.h_distance << endl;
 		open.pop();
 	}
 }

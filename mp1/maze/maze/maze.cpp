@@ -22,7 +22,8 @@ void initGraph(string fileName, map<int, adjListNode*>& graphVertices, vector<pa
 	// store maze width and height
 	mazeWidth = line.size();
 	mazeHeight = fileLines.size();
-
+	// cout << mazeWidth << endl;
+	// cout << mazeHeight << endl;
 	// cout << "get the mazeWidth and mazeHeight?" <<endl;
 	// store maze text into 2-D vector, indexing is column major
 	// vector<vector<char> > mazeText;
@@ -41,7 +42,8 @@ void initGraph(string fileName, map<int, adjListNode*>& graphVertices, vector<pa
 	// cout << "after the bool array" << endl;
 	
 	// find the first empty grid in the maze to start graph traversal
-	int currGrid = 1;
+	int currGrid = 0;
+	// cout << "after curr_grid" << endl;
 	// cout << currGrid /mazeWidth;
 	// cout << currGrid % mazeWidth;
 	// cout << "before while loop currgrid";
@@ -125,12 +127,15 @@ void initGraph(string fileName, map<int, adjListNode*>& graphVertices, vector<pa
 		// pop processed node
 		q.pop();
 	}
-	for(auto iter: graphVertices)
-	{
-		adjListNode curr = iter -> second;
-		curr.mahattan_distance = std::abs((dotPositions[0]->first - curr.nodeId%mazeWidth) + (dotPositions[0]->second - curr_y));
-		iter->second = curr;
-	}
+
+	// map<int, adjListNode*>::iterator it;
+
+	// for(it = graphVertices.begin(); it != graphVertices.end(); it++)
+	// {
+	// 	adjListNode * curr = it->second;
+	// 	curr.mahattan_distance = std::abs((dotPositions[0]->first - curr.nodeId%mazeWidth) + (dotPositions[0]->second - curr_y));
+	// 	it->second = curr;
+	// }
 }
 
 
@@ -142,7 +147,9 @@ int main(){
 	pair<int, int> startPosition;
 	int mazeWidth, mazeHeight;
 	vector<vector<char> > mazeText;
-	initGraph("mediumMaze.txt", graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight,mazeText);
+	initGraph("bigMaze.txt", graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight,mazeText);
+	//cout << startPosition.first%mazeWidth + startPosition.second*mazeWidth << endl;
+	
 	//Declare a search data structure that can execute all given searches
 	Search new_Search(graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight, mazeText);
 
@@ -154,8 +161,9 @@ int main(){
 
 		//new_Search.BFS_search();
 
-		new_Search.greedy_search();
+		//new_Search.greedy_search();
 
+		//new_Search.astar_search();
 	}
 
 	return 0;

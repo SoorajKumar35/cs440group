@@ -8,23 +8,23 @@
 #include <string>
 #include <queue>
 #include <map>
-#include <math>
+#include <cmath>
 #define NUM_NEIGHBORS 4
 using namespace std;
 
 
 typedef struct adjListNode{
 	// node id is the index of the node in the flattend maze matrix (y * width + x)
-	float mahattan_distance;
+	float h_distance;
 	int nodeId;
 	struct adjListNode* next;
 	bool operator<(struct adjListNode const& b) const
 	{
-		return mahattan_distance < b.mahattan_distance;
+		return h_distance < b.h_distance;
 	}
 	bool operator>(struct adjListNode const& b) const
 	{
-		return mahattan_distance > b.mahattan_distance;
+		return h_distance > b.h_distance;
 	}
 } adjListNode;
 
@@ -40,6 +40,7 @@ class Search{
 
 		//Helper function for calculating the Mahattan distance between two points
 		float mahattan_distance(pair<int,int> i_point, pair<int,int> f_point);
+		float start_distance(pair<int,int> i_point, pair<int,int> f_point);
 
 	private:
 		//Variables that store the maze representation

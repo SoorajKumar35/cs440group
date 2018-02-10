@@ -138,7 +138,7 @@ int main(){
 	pair<int, int> startPosition;
 	int mazeWidth, mazeHeight;
 	vector<vector<char> > mazeText;
-	initGraph("bigMaze.txt", graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight,mazeText);
+	initGraph("mediumMaze.txt", graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight,mazeText);
 	//cout << startPosition.first%mazeWidth + startPosition.second*mazeWidth << endl;
 	
 	//Declare a search data structure that can execute all given searches

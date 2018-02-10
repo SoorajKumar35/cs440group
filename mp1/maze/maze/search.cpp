@@ -20,6 +20,7 @@ void Search::DFS_search()
 	// Set up variables to use in DFS
 	std::stack<int> frontier;
 	std::map<int,int> parents;
+
 	bool visited[this->mazeWidth * this->mazeHeight];
 	std::memset(visited,false,this->mazeWidth * this->mazeHeight);
 
@@ -63,8 +64,16 @@ void Search::DFS_search()
 		}
 		if( (curr_x == dotx) && (curr_y == doty) )
 		{
+			int current_parent = parents[current_vertex];
+			int path_cost = 0;
+			while(current_parent != st_linear_idx)
+			{
+				path_cost++;
+				current_parent = parents[current_parent];
+			}
 			print_maze();
 			cout << "DFS_search" << endl;
+			cout << "Path cost: " << path_cost << endl;
 			std::cout << "Found the dot" << std::endl;
 			cout << "nodes_expanded: " << nodes_expanded << std::endl;
 			cout << "steps_to_goal: " << steps_to_goal << std::endl;
@@ -77,13 +86,7 @@ void Search::DFS_search()
 			if(!visited[head_curr_vertex->nodeId])
 			{
 				// cout << "got to this point in the inner while loop" << endl;
-				int current_parent = parents[current_vertex];
-				int path_cost = 0;
-				while(current_parent != st_linear_idx)
-				{
-					path_cost++;
-					current_parent = parents[current_parent];
-				}
+				parents[head_curr_vertex->nodeId] = current_vertex;
 				frontier.push(head_curr_vertex->nodeId);
 				//neighbors.push_back(head_curr_vertex->nodeId);
 				head_curr_vertex = head_curr_vertex -> next;
@@ -178,7 +181,7 @@ void Search::greedy_search()
 	// test_pq(open);
 
 	int st_linear_idx = this->startPosition.second*this->mazeWidth + this->startPosition.first%this->mazeWidth;
-	open.push(*(graphVertices[st_linear_idx]));
+	// open.push(*(graphVertices[st_linear_idx]));
 
 	bool visited[this->mazeWidth * this->mazeHeight];
 	std::memset(visited,false,this->mazeWidth * this->mazeHeight);
@@ -188,6 +191,27 @@ void Search::greedy_search()
 
 	int steps_to_goal = -1;
 	int nodes_expanded = 0;
+
+	adjListNode * start_n = graphVertices[st_linear_idx];
+	while(start_n != NULL)
+	{
+		if(!visited[start_n->nodeId])
+		{
+			int x = (start_n -> nodeId)%mazeWidth;
+			int y = (start_n -> nodeId)/mazeWidth;
+			pair<int,int> i_point(x,y);
+			pair<int,int> f_point(dotx,doty);
+			start_n -> h_distance = mahattan_distance(i_point,f_point);
+			parents[start_n->nodeId] = st_linear_idx;
+			open.push(*start_n);
+			start_n = start_n -> next;
+		}
+		else
+		{
+			start_n = start_n -> next;
+ 		}
+	}
+
 
 	//While loop for greedy best-first search
 	while(!open.empty())
@@ -214,9 +238,17 @@ void Search::greedy_search()
 		visited[curr.nodeId]= true;
 
 		if( (curr_x == dotx) && (curr_y == doty) )
-		{			
+		{		
+		    int path_cost = 0;	
+			int current_parent = parents[curr.nodeId];
+			while(current_parent != st_linear_idx)
+			{
+				path_cost++;
+				current_parent = parents[current_parent];
+			}
 			print_maze();
 			cout << "Greedy_search" << endl;
+			cout << "path_cost: " << path_cost << endl;
 			cout << "steps_to_goal: " << steps_to_goal << endl;
 			cout << "nodes_expanded " << nodes_expanded << endl;
 			cout << "Found the dot" << endl;
@@ -241,8 +273,10 @@ void Search::greedy_search()
 				int y = (neighbor_node -> nodeId)/mazeWidth;
 				pair<int,int> i_point(x,y);
 				pair<int,int> f_point(dotx,doty);
-
 				neighbor_node -> h_distance = mahattan_distance(i_point,f_point);
+
+				parents[neighbor_node->nodeId] = curr.nodeId;
+				
 				open.push(*neighbor_node);
 				neighbor_node = neighbor_node -> next;
 			}

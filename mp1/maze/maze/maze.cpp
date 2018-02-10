@@ -127,15 +127,6 @@ void initGraph(string fileName, map<int, adjListNode*>& graphVertices, vector<pa
 		// pop processed node
 		q.pop();
 	}
-
-	// map<int, adjListNode*>::iterator it;
-
-	// for(it = graphVertices.begin(); it != graphVertices.end(); it++)
-	// {
-	// 	adjListNode * curr = it->second;
-	// 	curr.mahattan_distance = std::abs((dotPositions[0]->first - curr.nodeId%mazeWidth) + (dotPositions[0]->second - curr_y));
-	// 	it->second = curr;
-	// }
 }
 
 
@@ -147,7 +138,7 @@ int main(){
 	pair<int, int> startPosition;
 	int mazeWidth, mazeHeight;
 	vector<vector<char> > mazeText;
-	initGraph("bigMaze.txt", graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight,mazeText);
+	initGraph("tinymaze.txt", graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight,mazeText);
 	//cout << startPosition.first%mazeWidth + startPosition.second*mazeWidth << endl;
 	
 	//Declare a search data structure that can execute all given searches
@@ -157,13 +148,18 @@ int main(){
 	{
 		// Here we execute the 1.1 search algorithms.
 		// cout << "is it in the search or befo?" << endl;
-		//new_Search.DFS_search(); // Execute DFS search
+		
+        new_Search.reset_graph();
+		new_Search.DFS_search(); // Execute DFS search
 
-		//new_Search.BFS_search();
+        new_Search.reset_graph();
+		new_Search.BFS_search();
 
-		//new_Search.greedy_search();
+        new_Search.reset_graph();
+		new_Search.greedy_search();
 
-		//new_Search.astar_search();
+        new_Search.reset_graph();
+		new_Search.astar_search();
 	}
 
 	return 0;

@@ -26,6 +26,7 @@ typedef struct adjListNode{
 	{
 		return h_distance > b.h_distance;
 	}
+	int steps_from_start;
 } adjListNode;
 
 
@@ -41,6 +42,8 @@ class Search{
 		//Helper function for calculating the Mahattan distance between two points
 		float mahattan_distance(pair<int,int> i_point, pair<int,int> f_point);
 		float start_distance(pair<int,int> i_point, pair<int,int> f_point);
+		void print_maze();
+		void reset_graph();
 
 	private:
 		//Variables that store the maze representation

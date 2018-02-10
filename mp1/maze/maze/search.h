@@ -26,6 +26,11 @@ typedef struct adjListNode{
 	{
 		return h_distance > b.h_distance;
 	}
+	bool operator==(struct adjListNode const& b) const
+	{
+		return nodeId == b.nodeId;
+	}
+
 	int steps_from_start;
 } adjListNode;
 

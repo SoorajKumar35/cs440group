@@ -19,7 +19,7 @@ void Search::DFS_search()
 
 	// Set up variables to use in DFS
 	std::stack<int> frontier;
-
+	std::map<int,int> parents;
 	bool visited[this->mazeWidth * this->mazeHeight];
 	std::memset(visited,false,this->mazeWidth * this->mazeHeight);
 
@@ -77,6 +77,13 @@ void Search::DFS_search()
 			if(!visited[head_curr_vertex->nodeId])
 			{
 				// cout << "got to this point in the inner while loop" << endl;
+				int current_parent = parents[current_vertex];
+				int path_cost = 0;
+				while(current_parent != st_linear_idx)
+				{
+					path_cost++;
+					current_parent = parents[current_parent];
+				}
 				frontier.push(head_curr_vertex->nodeId);
 				//neighbors.push_back(head_curr_vertex->nodeId);
 				head_curr_vertex = head_curr_vertex -> next;
@@ -96,7 +103,7 @@ void Search::DFS_search()
 void Search::BFS_search()
 {
 	std::queue<int> frontier;
-
+	std::map<int, int> parents;
 	bool visited[this->mazeWidth * this->mazeHeight];
 	std::memset(visited,false,this->mazeWidth * this->mazeHeight);
 
@@ -127,9 +134,17 @@ void Search::BFS_search()
 		}
 		if( (curr_x == dotx) && (curr_y == doty) )
 		{
+			int current_parent = parents[current_vertex];
+			int path_cost = 0;
+			while(current_parent != st_linear_idx)
+			{
+				path_cost++;
+				current_parent = parents[current_parent];
+			}
 			print_maze();
 			cout << "BFS_search" << endl;
 			std::cout << "Found the dot" << std::endl;
+			cout << "Path cost: " << path_cost << endl;
 			cout << "nodes_expanded: " << nodes_expanded << std::endl;
 			cout << "steps_to_goal: " << steps_to_goal << std::endl;
 			
@@ -139,6 +154,7 @@ void Search::BFS_search()
 		{
 			if(!visited[head_curr_vertex->nodeId])
 			{
+				parents[head_curr_vertex->nodeId] = current_vertex;
 				frontier.push(head_curr_vertex->nodeId);
 				head_curr_vertex = head_curr_vertex -> next;
 			}
@@ -157,7 +173,7 @@ void Search::greedy_search()
 {
 	//Create a priority queue
 	std::priority_queue<adjListNode, std::vector<adjListNode>, std::greater<adjListNode> > open;
-
+	std::map<int,int> parents;
 	// //Test function for the pq
 	// test_pq(open);
 
@@ -245,6 +261,7 @@ void Search::astar_search()
 {
 	//Create a priority queue
 	std::priority_queue<adjListNode, std::vector<adjListNode>, std::greater<adjListNode> > open;
+	std::map<int,int> parents;
 
 	//Test function for the pq
 	// test_pq(open);
@@ -267,8 +284,12 @@ void Search::astar_search()
 	int steps_to_goal = -1;
 	int nodes_expanded = 0;
 
+	adjListNode start_node;
+	start_node.nodeId = st_linear_idx;
+
 	adjListNode * neighbor_node;
 	neighbor_node = graphVertices[st_linear_idx];
+
 	while(neighbor_node != NULL)
 	{
 		if(!visited[neighbor_node -> nodeId])
@@ -280,20 +301,22 @@ void Search::astar_search()
 			pair<int,int> f_point(dotx,doty);
 			neighbor_node -> steps_from_start = 1;
 			neighbor_node -> h_distance = mahattan_distance(i_point,f_point) + neighbor_node->steps_from_start;
-			//cout << "h_distance :" << neighbor_node -> h_distance  << endl;
+			// cout << "m_distance :" << mahattan_distance(i_point,f_point)  << endl;
+			// cout << "h_distance :" << mahattan_distance(i_point,f_point) + neighbor_node->steps_from_start << endl;
+			parents[neighbor_node -> nodeId] = st_linear_idx;
 			open.push(*neighbor_node);
 			neighbor_node = neighbor_node -> next;
 		}
 		else
 			neighbor_node = neighbor_node -> next;
-		nodes_expanded++;
+		//nodes_expanded++;
 	}
-	// std::cout << endl;
+	//std::cout << endl;
 	//cout << "nodes_expanded: " << nodes_expanded << endl;
 	//While loop for greedy best-first search
 	while(!open.empty())
 	{
-		steps_to_goal++;		
+		nodes_expanded++;		
 	    
 		//cout << "Steps to goal: " << steps_to_goal << endl;
 		//Remove the node with the lowest mahattan distance
@@ -312,22 +335,43 @@ void Search::astar_search()
 
 		if( (curr_x == dotx) && (curr_y == doty) )
 		{
+			// Get parent of the goal node
+
+
+			int current_parent = parents[curr.nodeId];
+			cout << "curr.nodeId = " << curr.nodeId << endl;
+			cout << "current_parent.nodeId = " << current_parent << endl;
+			cout << "Parent of current_parent.nodeId = " << parents[current_parent] << endl; 
+			int path_cost = 0;
+			while(current_parent != st_linear_idx)
+			{
+				path_cost++;
+				current_parent = parents[current_parent];
+			}
 			print_maze();
 			cout << "astar_search" << endl;
+			cout << "path_cost: " << path_cost << endl;
 			cout << "steps_to_goal: " << steps_to_goal << endl;
 			cout << "nodes_expanded " << nodes_expanded << endl;
 			cout << "Found the dot" << endl;
 			return;
 		}
 
+
+
 		if( (curr_x != this -> startPosition.first) || (curr_y != this->startPosition.second))
 		{
-			int reduced = curr.steps_from_start%10;
-			mazeText[curr_y][curr_x] = '.'; //('0' + reduced);
+			// int reduced = curr.steps_from_start%10;
+			// pair<int,int> i_point(curr_x,curr_y);
+			// pair<int,int> f_point(dotx,doty);
+			// int m_d = mahattan_distance(i_point,f_point);
+			// m_d %= 10;
+			mazeText[curr_y][curr_x] = '.';//('0' + m_d);
 		}
 
 
 		neighbor_node = graphVertices[curr.nodeId];
+
 		if(neighbor_node == NULL)
 			cout << "The neighbor_node is NULL" << endl;
         
@@ -338,12 +382,20 @@ void Search::astar_search()
 			{
 				int x = (neighbor_node -> nodeId)%mazeWidth;
 				int y = (neighbor_node -> nodeId)/mazeWidth;
-				// cout << "neighbor_node_x: " << x << " neighbor_node_y: " << y << endl;
+				//cout << "neighbor_node_x: " << x << " neighbor_node_y: " << y << endl;
+
+
 				pair<int,int> i_point(x,y);
 				pair<int,int> f_point(dotx,doty);
 				neighbor_node -> steps_from_start = curr.steps_from_start + 1; 
 				neighbor_node -> h_distance = mahattan_distance(i_point,f_point) + neighbor_node->steps_from_start;
-				// cout << "m_distance :" << mahattan_distance(i_point,f_point) << endl;
+
+
+				parents[neighbor_node -> nodeId] = curr.nodeId;
+				//cout << "m_distance :" << mahattan_distance(i_point,f_point) << endl;
+				//cout << "h_distance :" << mahattan_distance(i_point,f_point) + neighbor_node->steps_from_start << endl;
+
+
 				open.push(*neighbor_node);
 				neighbor_node = neighbor_node -> next;
 			}
@@ -353,7 +405,7 @@ void Search::astar_search()
  			}
  			nodes_expanded++;
 		}
-		// std::cout<<endl;
+		//std::cout<<endl;
 
 	}
 

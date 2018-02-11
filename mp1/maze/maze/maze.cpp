@@ -2,8 +2,8 @@
 using namespace std;
 
 // parameter: filename of the .txt file for target maze
-void initGraph(string fileName, map<int, adjListNode*>& graphVertices, vector<pair<int,int> >& dotPositions, pair<int, int>& startPosition, int& mazeWidth, int& mazeHeight,
-	vector<vector<char> >& mazeText){
+void initGraph(string fileName, map<int, adjListNode*>& graphVertices, vector<pair<int, int> >& dotPositions, pair<int, int>& startPosition, int& mazeWidth, int& mazeHeight,
+	vector<vector<char> >& mazeText, vector<int>& dotIds) {
 
 	// read from maze text file line by line
 	vector<string> fileLines;
@@ -22,163 +22,159 @@ void initGraph(string fileName, map<int, adjListNode*>& graphVertices, vector<pa
 	// store maze width and height
 	mazeWidth = line.size();
 	mazeHeight = fileLines.size();
-	// cout << mazeWidth << endl;
-	// cout << mazeHeight << endl;
 	// cout << "get the mazeWidth and mazeHeight?" <<endl;
 	// store maze text into 2-D vector, indexing is column major
 	// vector<vector<char> > mazeText;
-	for (int i = 0; i < mazeHeight; i++){
+	for (int i = 0; i < mazeHeight; i++) {
 		vector<char> currLine;
-		for (size_t j = 0; j < mazeWidth; j++){
+		for (size_t j = 0; j < mazeWidth; j++) {
 			currLine.push_back(fileLines[i].at(j));
 		}
 		mazeText.push_back(currLine);
 	}
 
 	vector<bool> visited;
-	for (int i = 0; i < mazeHeight*mazeWidth; i++){
+	for (int i = 0; i < mazeHeight*mazeWidth; i++) {
 		visited.push_back(false);
 	}
-	// cout << "after the bool array" << endl;
-	
-	// find the first empty grid in the maze to start graph traversal
+
 	int currGrid = 0;
-	// cout << "after curr_grid" << endl;
-	// cout << currGrid /mazeWidth;
-	// cout << currGrid % mazeWidth;
-	// cout << "before while loop currgrid";
-	while (mazeText[currGrid / mazeWidth][currGrid%mazeWidth] == '%'){
-		//cout << currGrid << endl;
-		currGrid++;
+
+	for (int i = 0; i < mazeHeight; i++) {
+		for (int j = 0; j < mazeWidth; j++) {
+			if (mazeText[i][j] == '%') {
+				continue;
+			}
+			adjListNode * curr;
+			//check if node already in map
+			if (graphVertices[i* mazeWidth + j] != NULL){
+				
+				curr = graphVertices[i*mazeWidth + j];
+				curr->nodeId = i * mazeWidth + j;
+				//cout << "present" << i << j;
+			}
+			else
+			{
+				curr = new adjListNode();
+				curr->nodeId = i * mazeWidth + j;
+				graphVertices[i*mazeWidth + j] = curr;
+
+			}
+
+			if (mazeText[i][j] == 'P') {
+				pair<int, int> start(i, j);
+				startPosition = start;
+				curr->type = 1;
+			}
+			else if (mazeText[i][j] == '.') {
+				pair<int, int> dot(i, j);
+				dotPositions.push_back(dot);
+				dotIds.push_back(i*mazeWidth + j);
+				curr->type = 2;
+			}
+			else if (mazeText[i][j] == ' ')
+			{
+				curr->type = 3;
+			}
+			// check four neighbours of current grid
+			//SINCE WE ARE GOING LEFT TO RIGHT, WE know right and bottom will be new nodes so need to add to map
+			// and top and left will be in map
+
+			//RIGHT
+			if (mazeText[i][j + 1] != '%') {
+				if (graphVertices[i* mazeWidth + j + 1] == NULL)
+				{
+					adjListNode *right = new adjListNode();
+					right->nodeId = i * mazeWidth + j + 1;
+					right->neighbours.push_back(curr);
+					curr->neighbours.push_back(right);
+					graphVertices[i*mazeWidth + j + 1] = right;
+				}
+				else
+				{
+					curr->neighbours.push_back(graphVertices[i* mazeWidth + j + 1]);
+					graphVertices[i* mazeWidth + j + 1]->neighbours.push_back(curr);
+				}
+			}
+			//DOWN
+			if (mazeText[i + 1][j] != '%') {
+				if (graphVertices[(i+1)* mazeWidth + j] == NULL)
+				{
+					adjListNode *down = new adjListNode();
+					down->nodeId = (i + 1) * mazeWidth + j;
+					down->neighbours.push_back(curr);
+					curr->neighbours.push_back(down);
+					graphVertices[(i + 1)*mazeWidth + j] = down;
+				}
+				else
+				{
+					curr->neighbours.push_back(graphVertices[(i + 1)* mazeWidth + j]);
+					graphVertices[(i+1)* mazeWidth + j]->neighbours.push_back(curr);
+
+				}
+			}
+			/*//LEFT
+			if (mazeText[i][j - 1] != '%') {
+				adjListNode *left = graphVertices[i*mazeWidth + j - 1];
+				curr->neighbours.push_back(left);
+			}
+			//UP
+			if (mazeText[i-1][j] != '%') {
+				adjListNode *up = new adjListNode();
+				up = graphVertices[(i-1)*mazeWidth + j];
+				up->nodeId = (i-1)* mazeWidth + j;
+				curr->neighbours.push_back(up);
+			}*/
+
+		}
 	}
-	// cout << "before curr_X and curr_y assignment" << endl;
-	int curr_x = currGrid%mazeWidth;
-	int curr_y = currGrid/mazeWidth;
-	
-	queue<int> q;
-	q.push(currGrid);
-	visited[currGrid] = true;
-
-	// cout << "befo the init while loop? " << endl;
-	while (!q.empty()){
-		currGrid = q.front();
-		curr_x = currGrid%mazeWidth;
-		curr_y = currGrid / mazeWidth;
-
-		//visited[currGrid] = true;
-
-		// store its coordinate if the current node is a starting point or a dot
-		if (mazeText[curr_y][curr_x] == 'P'){
-			pair<int, int> start(curr_x, curr_y);
-			startPosition = start;
-		}
-		else if(mazeText[curr_y][curr_x] == '.'){
-			pair<int, int> dot(curr_x, curr_y);
-			dotPositions.push_back(dot);
-		}
-
-		// initialize adj list for current node
-		adjListNode* listHead = new adjListNode();
-		adjListNode* curr = listHead;
-
-		// check four neighbours of current grid
-		if (curr_x < mazeWidth - 1 && mazeText[curr_y][curr_x + 1] != '%'){
-			curr->next = new adjListNode();
-			curr = curr->next;
-			curr->nodeId = currGrid + 1;
-			if (!visited[currGrid + 1]){
-				visited[currGrid + 1] = true;
-				q.push(currGrid + 1);
-			}
-		}
-
-		if (curr_x > 0 && mazeText[curr_y][curr_x - 1] != '%'){
-			curr->next = new adjListNode();
-			curr = curr->next;
-			curr->nodeId = currGrid - 1;
-			if (!visited[currGrid - 1]){
-				visited[currGrid - 1] = true;
-				q.push(currGrid - 1);
-			}
-		}
-
-		if (curr_y > 0 && mazeText[curr_y - 1][curr_x] != '%'){
-			curr->next = new adjListNode();
-			curr = curr->next;
-			curr->nodeId = currGrid - mazeWidth;
-			if (!visited[currGrid - mazeWidth]){
-				visited[currGrid - mazeWidth] = true;
-				q.push(currGrid - mazeWidth);
-			}
-		}
-		if (curr_y < mazeHeight - 1 && mazeText[curr_y + 1][curr_x] != '%'){
-			curr->next = new adjListNode();
-			curr = curr->next;
-			curr->nodeId = currGrid + mazeWidth;
-			if (!visited[currGrid + mazeWidth]){
-				visited[currGrid + mazeWidth] = true;
-				q.push(currGrid + mazeWidth);
-			}
-		}
-
-		// update adjlist of current node
-		graphVertices[currGrid] = listHead->next;
-
-		// pop processed node
-		q.pop();
-	}
+	/*for (auto elem : graphVertices)
+	{
+		std::cout << elem.first/mazeWidth <<" " << elem.first%mazeWidth <<" "<<elem.second->type<< "\n";
+	}*/
+	//cout << size(dotPositions);
 }
 
 
 
-int main(){
+int main() {
 	// testing graph construction with medium maze
 	map<int, adjListNode*> graphVertices;
-	vector<pair<int,int> > dotPositions;
+	vector<pair<int, int> > dotPositions;
+	vector<int> dotIds;
 	pair<int, int> startPosition;
 	int mazeWidth, mazeHeight;
 	vector<vector<char> > mazeText;
-	initGraph("mediumMaze.txt", graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight,mazeText);
+	initGraph("tinymulti.txt", graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight, mazeText,dotIds);
 	//cout << startPosition.first%mazeWidth + startPosition.second*mazeWidth << endl;
-	
-	//Declare a search data structure that can execute all given searches
-	Search new_Search(graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight, mazeText);
 
-	if(dotPositions.size() < 2)
+	//Declare a search data structure that can execute all given searches
+	Search new_Search(graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight, mazeText, dotIds);
+
+	if (dotPositions.size() < 2)
 	{
 		// Here we execute the 1.1 search algorithms.
 		// cout << "is it in the search or befo?" << endl;
-		
-        new_Search.reset_graph();
-		new_Search.DFS_search(); // Execute DFS search
 
-        new_Search.reset_graph();
+		//new_Search.reset_graph();
+		new_Search.DFS_search(); // Execute DFS search
+		
+		new_Search.reset_graph();
 		new_Search.BFS_search();
 
-        new_Search.reset_graph();
+		new_Search.reset_graph();
 		new_Search.greedy_search();
-
-        new_Search.reset_graph();
+		
+		new_Search.reset_graph();
 		new_Search.astar_search();
-	}
 
+
+	}
+	else
+	{
+		new_Search.multi_search();
+		int wait;
+		cin >> wait;
+	}
 	return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

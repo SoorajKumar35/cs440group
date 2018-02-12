@@ -53,6 +53,11 @@ public:
 	void greedy_search();
 	void astar_search();
 
+
+	int findNearestDot(vector<pair<int, int>> dots, vector<bool> dotsVisited, int currX, int currY);
+	void suboptimal_search();
+
+
 	//Helper function for calculating the Mahattan distance between two points
 	float mahattan_distance(pair<int, int> i_point, pair<int, int> f_point);
 	float start_distance(pair<int, int> i_point, pair<int, int> f_point);

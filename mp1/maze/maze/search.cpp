@@ -741,6 +741,108 @@ void Search::multi_search()
 	print_maze();
 }
 
+int Search::findNearestDot(vector<pair<int, int>> dots, vector<bool> dotsVisited, int currX, int currY){
+	int nearest = -1;
+	pair<int, int> currLoc(currX, currY);
+	float dist = 100000;
+	for (int i = 0; i < dots.size(); i++){
+		if (mahattan_distance(dots[i], currLoc) < dist && !dotsVisited[i]){
+			dist = mahattan_distance(dots[i], currLoc);
+			nearest = i;
+		}
+	}
+	return nearest;
+}
+void Search::suboptimal_search(){
+	nodes_expanded = 0;
+
+	bool * visited = new bool[this->mazeWidth * this->mazeHeight];
+	std::memset(visited, false, this->mazeWidth * this->mazeHeight);
+
+	vector<bool> dotsVisited;
+	for (int i = 0; i < dotPositions.size(); i++){
+		dotsVisited.push_back(false);
+	}
+	// Get the linear idx of the start position
+	int st_linear_idx = this->startPosition.first*this->mazeWidth + this->startPosition.second;
+	int remDots = dotPositions.size();
+	int step = 0;
+	int currX = startPosition.first;
+	int currY = startPosition.second;
+	int nextDot = findNearestDot(dotPositions, dotsVisited, currX, currY);
+	int dotx = this->dotPositions[nextDot].first;
+	int doty = this->dotPositions[nextDot].second;
+
+	int final_dot = dotx * this->mazeWidth + doty;
+	int nodes_expanded = 0;
+	int path_cost = 0;
+	vector<int> path;
+	int segstart = st_linear_idx;
+	int segend = final_dot;
+	while (remDots != 0){
+
+		std::queue<adjListNode*> seg_front;
+		seg_front.push(graphVertices[segstart]);
+		dotsVisited[nextDot] = true;
+		//bool * visited = new bool[this->mazeWidth * this->mazeHeight];
+		std::memset(visited, false, this->mazeWidth * this->mazeHeight);
+		map<int, int> parent;
+		adjListNode* curr;
+		while (!seg_front.empty()){
+			curr = seg_front.front();
+			vector<int> temppath;
+			if (curr->nodeId == segend){
+				//path.push_back(final_dot);
+				int temp = curr->nodeId;
+				while (temp != segstart){
+					temppath.push_back(parent[temp]);
+					temp = parent[temp];
+				}
+				//temppath.push_back(segstart);
+				for (int i = temppath.size() - 1; i >= 0; i--){
+					path.push_back(temppath[i]);
+				}
+				break;
+			}
+			vector<adjListNode *> ::iterator i;
+
+			for (i = curr->neighbours.begin(); i != curr->neighbours.end(); ++i)
+			{
+				int temp;
+				vector<int> temppath;
+				if (!visited[(*i)->nodeId])
+				{
+					nodes_expanded++;
+					visited[(*i)->nodeId] = true;
+					seg_front.push(*i);
+					parent[(*i)->nodeId] = curr->nodeId;
+				}
+			}
+			seg_front.pop();
+
+		}
+		segstart = segend;
+		nextDot = findNearestDot(dotPositions, dotsVisited, segstart / this->mazeWidth, segstart%this->mazeWidth);
+		if (nextDot != -1){
+			segend = dotPositions[nextDot].first*this->mazeWidth + dotPositions[nextDot].second;
+		}
+		remDots--;
+
+	}
+
+
+	for (int i = 0; i < path.size(); i++){
+		mazeText[path[i] / mazeWidth][path[i] % mazeWidth] = 's';
+	}
+	print_maze();
+	cout << "Suboptimal_search" << endl;
+	cout << "Path cost: " << path.size() << endl;
+	std::cout << "Found the dot" << std::endl;
+	cout << "nodes_expanded: " << nodes_expanded << std::endl;
+
+
+}
+
 int Search::dist_dots(int agentId, std::vector<int> dots)
 {
 	//FIND DIST FROM POINT TO ALL OTHER POINTS?

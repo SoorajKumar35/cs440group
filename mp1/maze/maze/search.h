@@ -4,6 +4,7 @@
 #include <vector>
 #include <stack>
 #include <stdio.h>
+#include <algorithm>
 #include <stdlib.h>
 #include <utility>
 #include <iostream>

@@ -449,29 +449,162 @@ void Search::multi_search()
 	f_queue.push_back(h_distance);
 	vector<int> finalpath;
 	vector<int> numnodes;
-	////////
-	/*vector<vector<int>>dists;
-	vector<vector<int>> P;
-	vector<int> onedotdist;
+	////////HUNGARIAN ALGORITHM
+	/*
+	vector<vector<int>>dists;
+	vector<vector<int>>backupdists;
+
 	vector<int> prevdot;
 	int dotdist;
 	for (auto j = dotIds.begin(); j != dotIds.end(); j++) 
 	{
+		vector<int> onedotdist;
+
+		//cout << *j << " ";
 		pair<int, int> x_point((*j) / mazeWidth, (*j) / mazeHeight);
-		vector<int> setup;
 		for (auto k = dotIds.begin(); k != dotIds.end();k++)
 		{
 			pair<int, int> y_point((*k) / mazeWidth, (*k) / mazeHeight);
 			dotdist = mahattan_distance(x_point, y_point);
-			onedotdist.push_back(dotdist);
-			setup.push_back(-1);
 			cout << dotdist << " ";
+			if (dotdist == 0)
+				dotdist = 1000;
+			onedotdist.push_back(dotdist);
 		}
-		P.push_back(setup);
 		cout << "\n";
 		prevdot = onedotdist;
 		dists.push_back(onedotdist);
-	}*/
+	}
+	backupdists = dists;
+	int tryagain = 1;
+	do {
+		for (int i = 0;i < numdots;i++)
+		{
+			int row_min = 1000;
+			for (int j = 0;j < numdots;j++)
+			{
+				if (dists[i][j] < row_min)
+					row_min = dists[i][j];
+
+			}
+			//cout << row_min;
+			for (int j = 0;j < numdots;j++)
+			{
+				dists[i][j]= dists[i][j]-row_min;
+			}
+		}
+		for (int i = 0;i < numdots;i++)
+		{
+			int col_min = 1000;
+			for (int j = 0;j < numdots;j++)
+			{
+				if (dists[j][i] < col_min)
+					col_min = dists[j][i];
+
+			}
+			for (int j = 0;j < numdots;j++)
+			{
+				dists[j][i] = dists[j][i] - col_min;
+			}
+		}
+		int numofzeros = 0;
+		int coverlines = 0;
+		int fl = 0;
+		tryagain = 1;
+		for (int i = 0;i < numdots;i++)
+		{
+			for (int j = 0;j < numdots;j++)
+			{
+				//cout << dists[i][j]<< " ";
+				if (dists[i][j] == 0)
+					numofzeros++;
+			}
+			//cout << "\n";
+		}
+		//cout << "\n" << "\n";
+		for (int i = 0;i < numdots;i++)
+		{
+
+			for (int j = 0;j < numdots;j++)
+			{
+				vector<int> coltrack;
+				vector<int> rowtrack;
+				if (dists[i][j] == 0)
+				{
+					int k;
+					int colzs = 0;
+					int rowzs = 0;
+					for (k = 0;k < numdots;k++)
+					{
+						if (dists[k][j] == 0)
+						{
+							colzs++;
+							coltrack.push_back(k*numdots + j);
+						}
+						if (dists[i][k] == 0)
+						{
+							rowzs++;
+							rowtrack.push_back(i*numdots + k);
+						}
+					}
+
+					if (colzs >= rowzs)
+					{
+						for (int m = 0;m < coltrack.size();m++)
+						{
+							dists[coltrack[m] / numdots][coltrack[m] % numdots] = -1;
+							numofzeros = numofzeros - colzs;
+							coverlines++;
+						}
+					}
+					else
+					{
+						for (int m = 0;m < rowtrack.size();m++)
+						{
+							dists[rowtrack[m] / numdots][rowtrack[m] % numdots] = -1;
+							numofzeros = numofzeros - rowzs;
+							coverlines++;
+						}
+					}
+					
+				}
+			}
+		}
+		//cout << coverlines;
+		if (coverlines >= numdots)
+		{
+			tryagain = 0;
+		}
+	} while (tryagain);
+
+	for (int i = 0;i < numdots;i++)
+	{
+		for (int j = 0;j < numdots;j++)
+		{
+			if (dists[i][j] == -1)
+			{
+				for (int k = 0;k < numdots;k++)
+				{
+					//if (dists[k][j] == -1 && k != i)
+					//	dists[k][j] = 0;
+					//if (dists[i][k] == -1 && k != j)
+					//	dists[i][k] = 0;
+				}
+			}
+			else {
+				backupdists[i][j] = 0;
+			}
+		}
+	}
+	for (int i = 0;i < numdots;i++)
+	{
+		for (int j = 0;j < numdots;j++)
+		{
+			cout <<backupdists[i][j]<< " ";
+		}
+		cout << "\n";
+	}
+	*/
 	//////////////
 	finalpath.push_back(st_linear_idx);
 	paths.push_back(finalpath);

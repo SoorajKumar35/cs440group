@@ -448,15 +448,41 @@ void Search::multi_search()
 	dist_from_start = 0;
 	f_queue.push_back(h_distance);
 	vector<int> finalpath;
-
+	vector<int> numnodes;
+	////////
+	/*vector<vector<int>>dists;
+	vector<vector<int>> P;
+	vector<int> onedotdist;
+	vector<int> prevdot;
+	int dotdist;
+	for (auto j = dotIds.begin(); j != dotIds.end(); j++) 
+	{
+		pair<int, int> x_point((*j) / mazeWidth, (*j) / mazeHeight);
+		vector<int> setup;
+		for (auto k = dotIds.begin(); k != dotIds.end();k++)
+		{
+			pair<int, int> y_point((*k) / mazeWidth, (*k) / mazeHeight);
+			dotdist = mahattan_distance(x_point, y_point);
+			onedotdist.push_back(dotdist);
+			setup.push_back(-1);
+			cout << dotdist << " ";
+		}
+		P.push_back(setup);
+		cout << "\n";
+		prevdot = onedotdist;
+		dists.push_back(onedotdist);
+	}*/
+	//////////////
 	finalpath.push_back(st_linear_idx);
 	paths.push_back(finalpath);
+	numnodes.push_back(numdots);
 	while (!frontier.empty())
 	{
 
 		adjListNode * v = frontier.front();
 		pathc = frontiercosts.front();
 		finalpath = paths.front();
+		numdots= numnodes.front();
 		visited = visit_maze.front();
 		//NICE ASTAR ANIMATION
 		//if (v->nodeId != st_linear_idx)
@@ -479,7 +505,7 @@ void Search::multi_search()
 		}
 		//cout << "\n";
 
-		if (numdots == 5)
+		if (numdots == 0)
 		{
 			cout << "ASTAR_search" << endl;
 			cout << "Path cost: " << pathc - 1 << endl;
@@ -492,6 +518,7 @@ void Search::multi_search()
 		frontiercosts.erase(frontiercosts.begin());
 		paths.erase(paths.begin());
 		f_queue.erase(f_queue.begin());
+		numnodes.erase(numnodes.begin());
 		visit_maze.erase(visit_maze.begin());
 		vector<adjListNode *> ::iterator i;
 		for (i = v->neighbours.begin(); i != v->neighbours.end(); ++i)
@@ -500,12 +527,12 @@ void Search::multi_search()
 			vector<int> temppath;
 			if (!visited[(*i)->nodeId])
 			{
-
+				//cout << (*i)->nodeId / mazeWidth << " " << (*i)->nodeId % mazeWidth<<":";
 				nodes_expanded++;
 				visited[(*i)->nodeId] = true;
 				int index_pri = 0;
 				pair<int, int> i_point((*i)->nodeId / mazeWidth, (*i)->nodeId %mazeWidth);
-				h_distance = dist_dots((*i)->nodeId);
+				h_distance = dist_dots((*i)->nodeId, dots_func);
 				dist_from_start = mahattan_distance(st_point, i_point);
 				f_dist = h_distance + dist_from_start;
 
@@ -536,6 +563,7 @@ void Search::multi_search()
 					frontier.push_back(*i);
 					temp = pathc;
 					frontiercosts.push_back(temp + 1);
+					numnodes.push_back(numdots);
 					visit_maze.push_back(visited);
 					temppath = finalpath;
 					temppath.push_back((*i)->nodeId);
@@ -546,6 +574,7 @@ void Search::multi_search()
 					f_queue.insert(f_queue.begin() + index_pri, f_dist);
 					frontier.insert(frontier.begin() + index_pri, *i);
 					temp = pathc;
+					numnodes.insert(numnodes.begin() + index_pri, numdots);
 					visit_maze.insert(visit_maze.begin() + index_pri, visited);
 					frontiercosts.insert(frontiercosts.begin() + index_pri, temp + 1);
 					temppath = finalpath;
@@ -554,14 +583,22 @@ void Search::multi_search()
 
 
 				}
+				//vector<adjListNode *> ::iterator j;
+				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+				/*for (j = frontier.begin() + 1; j != frontier.end();++j)
+					cout << (*j)->nodeId/mazeWidth<<" "<<(*j)->nodeId%mazeWidth <<" ";
+				cout << "\n";
+				*/
 
 			}
-		}
-		/*cout << pathc<< " "<< numdots<< "\n";
-		vector<int> ::iterator j;
+		}		//	cout << "\n";
+
+		//cout << pathc<< " "<< numdots<< "\n";
+		/*vector<int> ::iterator j;
 		std::this_thread::sleep_for(std::chrono::milliseconds(300));
 		for (j = finalpath.begin() + 1; j != finalpath.end();++j)
 			mazeText[*j / mazeWidth][*j%mazeWidth] = 's';
+		print_maze();
 		reset_graph();*/
 	}
 	vector<int> ::iterator j;
@@ -571,16 +608,15 @@ void Search::multi_search()
 	print_maze();
 }
 
-int Search::dist_dots(int agentId)
+int Search::dist_dots(int agentId, std::vector<int> dots)
 {
 	//FIND DIST FROM POINT TO ALL OTHER POINTS?
 	//restart visited after each point
 	int totdis = 0;
 	int dotdist = 0;
 	pair<int, int> agent_point(agentId/mazeWidth, agentId%mazeWidth);
-	int numdots = dotIds.size();
 	int total = 0;
-	for (auto i = dotIds.begin(); i != dotIds.end(); i++) {
+	for (auto i = dots.begin(); i != dots.end(); i++) {
 		pair<int, int> f_point((*i)/mazeWidth, (*i)/mazeHeight);
 		dotdist = mahattan_distance(agent_point, f_point);
 		totdis += dotdist;

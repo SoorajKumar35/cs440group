@@ -58,7 +58,7 @@ public:
 	void print_maze();
 	void reset_graph();
 	void multi_search();
-	int dist_dots(int agentId);
+	int dist_dots(int agentId, vector<int>dots);
 private:
 	//Variables that store the maze representation
 	map<int, adjListNode*> graphVertices;

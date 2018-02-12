@@ -53,18 +53,13 @@ public:
 	void greedy_search();
 	void astar_search();
 
-
-	int findNearestDot(vector<pair<int, int>> dots, vector<bool> dotsVisited, int currX, int currY);
-	void suboptimal_search();
-
-
 	//Helper function for calculating the Mahattan distance between two points
 	float mahattan_distance(pair<int, int> i_point, pair<int, int> f_point);
 	float start_distance(pair<int, int> i_point, pair<int, int> f_point);
 	void print_maze();
 	void reset_graph();
 	void multi_search();
-	int dist_dots(int agentId, vector<int>dots);
+	int dist_dots(int agentId, pair<int, int> st_point, vector<int>dots, vector <pair<int, pair<int, int>>> MSTsubg);
 private:
 	//Variables that store the maze representation
 	map<int, adjListNode*> graphVertices;

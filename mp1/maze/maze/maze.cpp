@@ -145,7 +145,7 @@ int main() {
 	pair<int, int> startPosition;
 	int mazeWidth, mazeHeight;
 	vector<vector<char> > mazeText;
-	initGraph("bigDots.txt", graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight, mazeText,dotIds);
+	initGraph("tinymulti.txt", graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight, mazeText,dotIds);
 	//cout << startPosition.first%mazeWidth + startPosition.second*mazeWidth << endl;
 
 	//Declare a search data structure that can execute all given searches
@@ -172,8 +172,7 @@ int main() {
 	}
 	else
 	{
-		//new_Search.multi_search();
-		new_Search.suboptimal_search();
+		new_Search.multi_search();
 		int wait;
 		cin >> wait;
 	}

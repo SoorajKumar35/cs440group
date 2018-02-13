@@ -45,6 +45,7 @@ void initGraph(string fileName, map<int, adjListNode*>& graphVertices, vector<pa
 			if (mazeText[i][j] == '%') {
 				continue;
 			}
+
 			adjListNode * curr;
 			//check if node already in map
 			if (graphVertices[i* mazeWidth + j] != NULL){
@@ -128,9 +129,13 @@ void initGraph(string fileName, map<int, adjListNode*>& graphVertices, vector<pa
 
 		}
 	}
+
 	/*for (auto elem : graphVertices)
 	{
-		std::cout << elem.first/mazeWidth <<" " << elem.first%mazeWidth <<" "<<elem.second->type<< "\n";
+		std::cout << elem.first / mazeWidth << " " << elem.first%mazeWidth << " ";
+		for (auto el2 : elem.second->neighbours)
+			cout << el2->nodeId << " ";
+		cout<<"\n";
 	}*/
 	//cout << size(dotPositions);
 }
@@ -145,7 +150,7 @@ int main() {
 	pair<int, int> startPosition;
 	int mazeWidth, mazeHeight;
 	vector<vector<char> > mazeText;
-	initGraph("tinymulti.txt", graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight, mazeText,dotIds);
+	initGraph("smallmulti.txt", graphVertices, dotPositions, startPosition, mazeWidth, mazeHeight, mazeText,dotIds);
 	//cout << startPosition.first%mazeWidth + startPosition.second*mazeWidth << endl;
 
 	//Declare a search data structure that can execute all given searches
@@ -167,7 +172,8 @@ int main() {
 		
 		new_Search.reset_graph();
 		new_Search.astar_search();
-
+		int wait;
+		cin >> wait;
 
 	}
 	else

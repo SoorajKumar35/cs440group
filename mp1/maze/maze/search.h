@@ -21,8 +21,8 @@ using namespace std;
 typedef struct adjListNode {
 	// node id is the index of the node in the flattend maze matrix (y * width + x)
 	float h_distance;
-	int nodeId=0;
-	int type=0;  // 1 is P, 2 is '.', 3 is ' '
+	int nodeId = 0;
+	int type = 0;  // 1 is P, 2 is '.', 3 is ' '
 	vector <adjListNode *> neighbours;  //all free spaces around a node
 	struct adjListNode* next;
 	bool operator<(struct adjListNode const& b) const
@@ -47,7 +47,7 @@ public:
 	Search(map<int, adjListNode*>& graphVertices, vector<pair<int, int> >& dotPositions, pair<int, int>& startPosition, int& mazeWidth, int& mazeHeight,
 		vector<vector<char> >& mazeText, vector<int> dotIds);
 	void DFS_search();
-	void DFS_recurse(int start,adjListNode * v, bool visited[],int finald, int pathc);
+	void DFS_recurse(int start, adjListNode * v, bool visited[], int finald, int pathc);
 
 	void BFS_search();
 	void greedy_search();
@@ -56,10 +56,12 @@ public:
 	//Helper function for calculating the Mahattan distance between two points
 	float mahattan_distance(pair<int, int> i_point, pair<int, int> f_point);
 	float start_distance(pair<int, int> i_point, pair<int, int> f_point);
+	int kruskalMST(vector <pair<int, pair<int, int>>> edges, int numVertices, map<int, int> dotM);
 	void print_maze();
 	void reset_graph();
 	void multi_search();
-	int dist_dots(int agentId, pair<int, int> st_point, vector<int>dots, vector <pair<int, pair<int, int>>> MSTsubg);
+	int dist_dots(int agentId, pair<int, int> st_point, vector<int>dots, vector <pair<int, pair<int, int>>> MSTsubg, int mstWeight);
+
 private:
 	//Variables that store the maze representation
 	map<int, adjListNode*> graphVertices;

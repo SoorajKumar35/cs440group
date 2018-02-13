@@ -1,5 +1,5 @@
 #include "search.h"
-
+#include "Disjoint.h"
 void test_pq(std::priority_queue<adjListNode, std::vector<adjListNode>, std::greater<adjListNode> > open);
 
 Search::Search(map<int, adjListNode*>& graphVertices, vector<pair<int, int> >& dotPositions, pair<int, int>& startPosition, int& mazeWidth, int& mazeHeight,
@@ -135,7 +135,7 @@ void Search::BFS_search()
 				temp = pathc;
 				frontiercosts.push(temp+1);
 				temppath = finalpath;
-				temppath.push_back((*i)->nodeId);
+				temppath.push_back((v)->nodeId);
 				paths.push(temppath);
 			}
 		}
@@ -270,7 +270,6 @@ void Search::greedy_search()
 		}
 	}
 	vector<int> ::iterator j;
-
 	for (j = finalpath.begin()+1; j != finalpath.end();++j)
 		mazeText[*j / mazeWidth][*j%mazeWidth] = '.';
 	print_maze();
@@ -340,7 +339,7 @@ void Search::astar_search()
 		paths.erase(paths.begin());
 		f_queue.erase(f_queue.begin());
 		vector<adjListNode *> ::iterator i;
-
+		int last = 1;
 		for (i = v->neighbours.begin(); i != v->neighbours.end(); ++i)
 		{
 			int temp;
@@ -356,13 +355,14 @@ void Search::astar_search()
 				h_distance = mahattan_distance(i_point, f_point);
 				dist_from_start = mahattan_distance(st_point, i_point);
 				f_dist = h_distance + dist_from_start;
-
+				int last = 1;
 				auto ir = f_queue.begin();
 				//F_QUEUE HOLDS THE F DISTANCES AND SORTS THEM
 				if (!f_queue.empty())
 				{
 					if (f_dist < *ir)
 					{
+						last = 0;
 						index_pri = 0;
 
 					}
@@ -371,13 +371,14 @@ void Search::astar_search()
 						for (ir = f_queue.begin(); ir != f_queue.end(); ++ir)
 							if (f_dist < *ir)
 							{
+								last = 0;
 								break;
 							}
 						index_pri = ir - f_queue.begin();
 					}
 				}
 				//IF FOR PUSH AT END(INDEX ERRORS) OR PUSH IN MIDDLE
-				if (f_queue.empty() || index_pri == f_queue.size())
+				if (f_queue.empty() || last)
 				{
 					//cout << "here";
 					f_queue.push_back(f_dist);
@@ -405,9 +406,9 @@ void Search::astar_search()
 		}
 	}
 	vector<int> ::iterator j;
-
 	for (j = finalpath.begin()+1; j != finalpath.end();++j)
 		mazeText[*j / mazeWidth][*j%mazeWidth] = '.';
+
 	print_maze();
 }
 	
@@ -418,6 +419,8 @@ void Search::multi_search()
 	std::vector<adjListNode *> frontier;
 	std::vector<int> frontiercosts;
 	std::vector<vector<int>> paths;
+	std::vector<vector<int>> dotsonpath;
+
 	std::vector<int> f_queue;
 	std::map<int, int> parents;
 	std::vector<int> dots_func;
@@ -435,18 +438,14 @@ void Search::multi_search()
 	int numdots = dotIds.size();
 	dots_func = dotIds;
 	visited[st_linear_idx] = true;
-	int dotx = this->dotPositions[0].first;
-	int doty = this->dotPositions[0].second;
-	int finald = dotx * mazeWidth + doty;
+
 	int nodes_expanded = 0;
 	int current_vertex;
 	int pathc = 0;
 	int f_dist;
 	pair<int, int> st_point(startPosition.first, startPosition.second);
-	pair<int, int> f_point(dotx, doty);
-	h_distance = mahattan_distance(st_point, f_point);
 	dist_from_start = 0;
-	f_queue.push_back(h_distance);
+
 	vector<int> finalpath;
 	vector<int> numnodes;
 
@@ -487,6 +486,7 @@ void Search::multi_search()
 	sort(MSTedges.begin(), MSTedges.end());
 	vector <pair<int, pair<int, int>>> MSTsubg; //weight, src, dst
 	vector< pair<int, pair<int,int>> >::iterator it;
+	vector<int> dots_reached;
 	for (it = MSTedges.begin(); it != MSTedges.end(); it++)
 	{
 		int u = it->second.first;
@@ -533,10 +533,23 @@ void Search::multi_search()
 	if the endpoints of e are disconnected in S(i.e., does not form a cycle)
 	add e to S
 	return S	*/
+	///////////////////////////////
+	vector<int> visitedDots;
+	std::map<int, int> dotMap;
+	for (int i = 0; i < dots_func.size(); i++) {
+		dotMap[dots_func[i]] = i;
+	}
+	int mstWeight = kruskalMST(MSTedges, dots_func.size(), dotMap);
+	h_distance = dist_dots(st_linear_idx, st_point, dots_func, MSTsubg, mstWeight);
 
+
+
+	f_queue.push_back(h_distance);
 	finalpath.push_back(st_linear_idx);
 	paths.push_back(finalpath);
 	numnodes.push_back(numdots);
+	dotsonpath.push_back(dots_func);
+
 	while (!frontier.empty())
 	{
 
@@ -545,6 +558,7 @@ void Search::multi_search()
 		finalpath = paths.front();
 		numdots= numnodes.front();
 		visited = visit_maze.front();
+		dots_func = dotsonpath.front();
 		//NICE ASTAR ANIMATION
 		//if (v->nodeId != st_linear_idx)
 		//mazeText[v->nodeId / mazeWidth][v->nodeId%mazeWidth] = 'a' -numdots;
@@ -552,29 +566,10 @@ void Search::multi_search()
 		//std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
 		current_vertex = v->nodeId;
-		//RESET VISITED AFTER FINDING DOT
-		for (auto i = dots_func.begin(); i != dots_func.end(); i++) {
-			//cout << *i << " ";
+		
 
-			if (current_vertex == (*i))
-			{
-				dots_func.erase(std::remove(dots_func.begin(), dots_func.end(), current_vertex), dots_func.end());
-				std::memset(visited, false, this->mazeWidth * this->mazeHeight);
-				--numdots;
-				break;
-			}
-		}
-		//cout << "\n";
 
-		if (numdots == 1)
-		{
-			cout << "ASTAR_search" << endl;
-			cout << "Path cost: " << pathc - 1 << endl;
-			std::cout << "Found the dot" << std::endl;
-			cout << "nodes_expanded: " << nodes_expanded << std::endl;
-			break;
-		}
-
+		dotsonpath.erase(dotsonpath.begin());
 		frontier.erase(frontier.begin());
 		frontiercosts.erase(frontiercosts.begin());
 		paths.erase(paths.begin());
@@ -585,18 +580,65 @@ void Search::multi_search()
 		for (i = v->neighbours.begin(); i != v->neighbours.end(); ++i)
 		{
 			int temp;
+
 			vector<int> temppath;
 			if (!visited[(*i)->nodeId])
 			{
+				vector<int> rchdots;
+				rchdots = dotIds;
+
+				for (auto z = dots_func.begin(); z != dots_func.end(); z++) {
+					//cout << *i << " ";
+
+					if ((*i)->nodeId == (*z))
+					{
+						dots_func.erase(std::remove(dots_func.begin(), dots_func.end(), (*i)->nodeId), dots_func.end());
+						std::memset(visited, false, this->mazeWidth * this->mazeHeight);
+						visited[(*i)->nodeId] = true;
+						--numdots;
+						for (int q = 0;q < dots_func.size();q++)
+						{
+
+							rchdots.erase(std::remove(rchdots.begin(), rchdots.end(), dots_func[q]), rchdots.end());
+
+						}
+						for (int q = 0;q < rchdots.size();q++)
+						{
+							//cout<<rchdots[q]<<" ";
+							visited[rchdots[q]] = true;
+						}
+						//cout << "\n";
+						for (int k = 0; k < MSTedges.size();) {
+							if (MSTedges[k].second.first == current_vertex || MSTedges[k].second.second == current_vertex) {
+								MSTedges.erase(MSTedges.begin() + k);
+							}
+							else {
+								k++;
+							}
+						}
+
+						std::map<int, int> dotMapUpdate;
+						for (int i = 0; i < dots_func.size(); i++) {
+							dotMapUpdate[dots_func[i]] = i;
+						}
+						mstWeight = kruskalMST(MSTedges, dots_func.size(), dotMapUpdate);
+						break;
+
+					}
+
+				}
+
+				visited[(*i)->nodeId] = true;
+				
+
 				//cout << (*i)->nodeId / mazeWidth << " " << (*i)->nodeId % mazeWidth<<":";
 				nodes_expanded++;
-				visited[(*i)->nodeId] = true;
 				int index_pri = 0;
 				pair<int, int> i_point((*i)->nodeId / mazeWidth, (*i)->nodeId %mazeWidth);
-				h_distance = dist_dots((*i)->nodeId, st_point,dots_func, MSTsubg);
+				h_distance = dist_dots((*i)->nodeId, st_point,dots_func, MSTsubg, mstWeight);
 				dist_from_start = mahattan_distance(st_point, i_point);
 				f_dist = h_distance + dist_from_start;
-
+				int last = 1;
 				auto ir = f_queue.begin();
 				//F_QUEUE HOLDS THE F DISTANCES AND SORTS THEM
 				if (!f_queue.empty())
@@ -604,26 +646,29 @@ void Search::multi_search()
 					if (f_dist < *ir)
 					{
 						index_pri = 0;
-
+						last = 0;
 					}
 					else {
 						//FIND WHERE TO INSERT
 						for (ir = f_queue.begin(); ir != f_queue.end(); ++ir)
 							if (f_dist < *ir)
 							{
+								last = 0;
 								break;
 							}
 						index_pri = ir - f_queue.begin();
 					}
 				}
+
 				//IF FOR PUSH AT END(INDEX ERRORS) OR PUSH IN MIDDLE
-				if (f_queue.empty() || index_pri == f_queue.size())
+				if (f_queue.empty() || last)
 				{
 					//cout << "here";
 					f_queue.push_back(f_dist);
 					frontier.push_back(*i);
 					temp = pathc;
 					frontiercosts.push_back(temp + 1);
+					dotsonpath.push_back(dots_func);
 					numnodes.push_back(numdots);
 					visit_maze.push_back(visited);
 					temppath = finalpath;
@@ -637,6 +682,7 @@ void Search::multi_search()
 					temp = pathc;
 					numnodes.insert(numnodes.begin() + index_pri, numdots);
 					visit_maze.insert(visit_maze.begin() + index_pri, visited);
+					dotsonpath.insert(dotsonpath.begin()+ index_pri,dots_func);
 					frontiercosts.insert(frontiercosts.begin() + index_pri, temp + 1);
 					temppath = finalpath;
 					temppath.push_back((*i)->nodeId);
@@ -644,17 +690,30 @@ void Search::multi_search()
 
 
 				}
-				//vector<adjListNode *> ::iterator j;
-				//std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-				/*for (j = frontier.begin() + 1; j != frontier.end();++j)
-					cout << (*j)->nodeId/mazeWidth<<" "<<(*j)->nodeId%mazeWidth <<" ";
-				cout << "\n";
-				*/
+		
+				
 
 			}
-		}		//	cout << "\n";
-
+		}		
+		if (numdots == 0)
+		{
+			cout << "ASTAR_search" << endl;
+			cout << "Path cost: " << pathc - 1 << endl;
+			std::cout << "Found the dot" << std::endl;
+			cout << "nodes_expanded: " << nodes_expanded << std::endl;
+			break;
+		}
+		
+		
+		//	cout << "\n";
+		vector<adjListNode *> ::iterator j;
+		//std::this_thread::sleep_for(std::chrono::milliseconds(400));
+		//for (j = frontier.begin() + 1; j != frontier.end();++j)
+		//	cout << (*j)->nodeId/ mazeWidth << " " << (*j)->nodeId%mazeWidth << " ";
+		//	cout << "\n";
 		//cout << pathc<< " "<< numdots<< "\n";
+
+
 		/*vector<int> ::iterator j;
 		std::this_thread::sleep_for(std::chrono::milliseconds(300));
 		for (j = finalpath.begin() + 1; j != finalpath.end();++j)
@@ -665,12 +724,47 @@ void Search::multi_search()
 	vector<int> ::iterator j;
 
 	for (j = finalpath.begin() + 1; j != finalpath.end();++j)
-		mazeText[*j / mazeWidth][*j%mazeWidth] = 's';
+		mazeText[*j / mazeWidth][*j%mazeWidth] = '.';
 	print_maze();
 }
 
-int Search::dist_dots(int agentId, pair<int,int> st_point,std::vector<int> dots, vector <pair<int, pair<int, int>>> MSTsubg)
+int Search::dist_dots(int agentId, pair<int,int> st_point,std::vector<int> dots, vector <pair<int, pair<int, int>>> MSTsubg, int mstWeight)
 {
+	int totdis = 0;
+	int dotdist = 0;
+	pair<int, int> agent_point(agentId / mazeWidth, agentId%mazeWidth);
+	int stdist = 0;
+	int min = 1000;
+	int min2 = 1000;
+	// dist to nearest unvisited + estimate to travel all unvisited(MST)
+	for (auto i = dots.begin(); i != dots.end(); i++) {
+		pair<int, int> f_point((*i) / mazeWidth, (*i) / mazeHeight);
+		dotdist = mahattan_distance(agent_point, f_point);
+		//stdist = mahattan_distance(st_point, f_point);
+		stdist = mahattan_distance(st_point, f_point);
+		if (dotdist < min)
+			min = dotdist;
+		if (stdist < min2)
+			min2 = stdist;
+
+	}
+	vector< pair<int, pair<int, int>> >::iterator it;
+	int vis;
+	int fis;
+	//dist to all unvisited in MST
+	/*
+	for (it = MSTsubg.begin(); it != MSTsubg.end(); it++)
+	{
+	vis = it->second.second;
+	fis = it->second.first;
+	for (int m = 0;m < dots.size();m++)
+	{
+	if (dots[m] == vis || dots[m]== fis)
+	totdis = totdis + it->first;
+	}
+	}*/
+	return mstWeight + min + min2;
+	/*
 	//FIND DIST FROM POINT TO ALL OTHER POINTS?
 	//restart visited after each point
 	int totdis = 0;
@@ -704,7 +798,7 @@ int Search::dist_dots(int agentId, pair<int,int> st_point,std::vector<int> dots,
 				totdis = totdis + it->first;
 		}
 	}
-	return totdis+min+min2;
+	return totdis+min2+min;*/
 	/*int *myInts= new int[dotIds.size()];
 	for (auto i = dotIds.begin(); i != dotIds.end(); i++) {
 		cout << (*i) <<"\n";
@@ -717,7 +811,45 @@ int Search::dist_dots(int agentId, pair<int,int> st_point,std::vector<int> dots,
 		cout << "\n";
 	} while (std::next_permutation(myInts, myInts + dotIds.size()));*/
 }
+int Search::kruskalMST(vector <pair<int, pair<int, int>>> edges, int numVertices, map<int, int> dotM)
+{
+	int mst_wt = 0; // Initialize result
 
+					// Sort edges in increasing order on basis of cost
+	sort(edges.begin(), edges.end());
+
+	// Create disjoint sets
+	DisjointSets ds(numVertices);
+
+	// Iterate through all sorted edges
+	vector< pair<int, pair<int, int>> >::iterator it;
+	for (it = edges.begin(); it != edges.end(); it++)
+	{
+		int u = dotM[it->second.first];
+		int v = dotM[it->second.second];
+
+		int set_u = ds.DisjointSets::find(u);
+		int set_v = ds.DisjointSets::find(v);
+
+		// Check if the selected edge is creating
+		// a cycle or not (Cycle is created if u
+		// and v belong to same set)
+		if (set_u != set_v)
+		{
+			// Current edge will be in the MST
+			// so print it
+			cout << u << " - " << v << endl;
+
+			// Update MST weight
+			mst_wt += it->first;
+
+			// Merge two sets
+			ds.DisjointSets::merge(set_u, set_v);
+		}
+	}
+	cout << endl;
+	return mst_wt;
+}
 
 void Search::print_maze()
 {

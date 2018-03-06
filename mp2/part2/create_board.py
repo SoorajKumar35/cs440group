@@ -3,8 +3,8 @@ BOARD_DIM = 7
 
 board =[ ['.' for x in range(BOARD_DIM)] for y in range(BOARD_DIM)]
 
-board[1][5] = 'A'
-board[5][1] = 'a'
+# board[1][5] = 'A'
+# board[5][1] = 'a'
 
 f = open('board.txt', 'w+')
 

@@ -9,6 +9,10 @@ gomoku::gomoku()
 		this-> board.push_back(row);
 		for(int i = 0; i < BOARD_DIM; i++)
 		{
+			if(j == 5 && i == 1)
+				board[j].push_back('a');
+			else if(j == 1 && i == 5)
+				board[j].push_back('A');
 			board[j].push_back('.');
 		}
 	}
@@ -34,28 +38,20 @@ void gomoku::play_game()
 	// Tossing a coin to see who starts first
 
 	// std::cout << "got into the function" <<endl;
-	int first_player = std::rand() % 2;
-    int next_player = 0;
-    next_player = (first_player == PLAYER1) ? PLAYER2 : PLAYER1;
-    std::cout << "first_player: " << first_player << endl;
-    std::cout << "next_player: " << next_player << endl;
 
-    // std::cout << first_player << endl;
-    // std::cout << "getting the start index" <<endl;
-
-    first_player = 0;
-    next_player = 1;
-    int start_index = winning_block(first_player);
+    int first_player = 0;
+    int next_player = 1;
+    // int start_index = winning_block(first_player);
     // cout << "placing the move" << endl;
-    place_move(first_player,start_index);
+    // place_move(first_player,start_index);
 
     // cout << "before the players assignment" << endl;
-    this->curr_player = next_player;
-    this->prev_player = first_player;
+    this->curr_player = first_player;
+    this->prev_player = next_player;
 
     int num_moves = 0;
     // cout << "before the while loop" << endl;
-    while(!is_winner(this->prev_player) && num_moves < 15)
+    while(!is_winner(this->prev_player))
     {
     	// First, we check if we have four stones any where
     	cout << "num_moves " << num_moves << endl;
@@ -115,8 +111,10 @@ void gomoku::play_game()
 
 void gomoku::place_move(int player, int lin_idx)
 {
+
 	int x = lin_idx % BOARD_DIM;
 	int y = lin_idx / BOARD_DIM;
+	std::cout << "MOVE: (" << x << "," << y << ")" << endl;
 
 	if(player == PLAYER1)
 	{
@@ -244,18 +242,10 @@ int gomoku::third_rule_checker(int player)
 
 int gomoku::winning_block(int player)
 {
-	// Returns the linear index of the best row, col, ldiag, and rdiag
-	// Here best is defined as containing most of player's peices, and 
 	pair<int,int> best_row = winning_row(player);
 	pair<int,int> best_col = winning_col(player);
 	pair<int,int> best_ldiag = winning_ldiag(player);
 	pair<int,int> best_rdiag = winning_rdiag(player);
-
-	// cout << "best_row.first = " << best_row.first << " best_row.second = " << best_row.second << endl;
-	// cout << "best_col.first = " << best_col.first << " best_col.second = " << best_col.second << endl;
-	// cout << "best_ldiag.first = " << best_ldiag.first << " best_ldiag.second = " << best_ldiag.second << endl;
-	// cout << "best_rdiag.first = " << best_rdiag.first << " best_rdiag.second = " << best_rdiag.second << endl;
-
 
 	vector<int> best_number_pieces;
 	best_number_pieces.push_back(best_row.second);
@@ -269,10 +259,19 @@ int gomoku::winning_block(int player)
 	linear_indices.push_back(best_ldiag.first);
 	linear_indices.push_back(best_rdiag.first);
 
-	//We got to return the best index in terms of not only agent peices but also left most and down most
 	auto iter_to_max = std::max_element(best_number_pieces.begin(), best_number_pieces.end());
 	int max_element = *iter_to_max;
-	//std::cout << "max_element: " << max_element << endl;
+	if(max_element == -1)
+	{
+		for(int col = 0; col < BOARD_DIM; col++)
+		{
+			for(int row = BOARD_DIM-1; row > -1; row--)
+			{
+				if(board[row][col] == '.')
+					return row*BOARD_DIM + col;
+			}
+		}
+	}
 	std::vector<int> best_indices;
 	for(int i = 0; i < 4; i++)
 	{
@@ -290,11 +289,20 @@ int gomoku::winning_block(int player)
 		{
 			int curr_x = best_indices[i] % BOARD_DIM;
 			int curr_y = best_indices[i] / BOARD_DIM;
-			if(curr_x <= best_x && curr_y >= best_y)
+			if(curr_x < best_x)
 			{
 				best_x = curr_x;
 				best_y = curr_y;
 			}
+			else if(curr_x == best_x && curr_y > best_y)
+			{
+				best_x = curr_x;
+				best_y = curr_y;
+			}
+			cout << "best_x: " << best_x << endl;
+			cout << "best_y: " << best_y << endl;
+			cout << "curr_x: " << curr_x << endl;
+			cout << "curr_y: " << curr_y << endl;
 		}
 
 		// std::cout << "Index to be returned " << (BOARD_DIM*best_y) + best_x << endl;

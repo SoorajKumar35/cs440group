@@ -89,13 +89,15 @@ int gomoku::col_checker(int player, int piece_number)
 					curr_pieces_player++;
 					if(curr_pieces_player == piece_number)
 					{
-						if(row - piece_number > -1)
-							if(board[row - piece_number][col] == '.')
-								return ( (row - piece_number) * BOARD_DIM) + col;
 
 						if(row + 1 < BOARD_DIM)
 							if(board[row+1][col] == '.')
 								return ( (row + 1) * BOARD_DIM) + col;
+
+						if(row - piece_number > -1)
+							if(board[row - piece_number][col] == '.')
+								return ( (row - piece_number) * BOARD_DIM) + col;
+
 					}
 				}
 				else
@@ -263,7 +265,9 @@ pair<int,int> gomoku::winning_row(int player)
 			best_row.push_back(index_and_count.first);
 		
 	}
-
+	pair<int,int> fail_return = std::pair<int,int>(-1,-1);
+	if(best_row.size() == 0)
+		return fail_return;
 	//If there are more than one good row, we pick the lowest and leftmost
 	if(best_row.size() > 1)
 	{
@@ -274,7 +278,12 @@ pair<int,int> gomoku::winning_row(int player)
 			int curr_y = best_row[i] / BOARD_DIM;
 			int curr_x = best_row[i] % BOARD_DIM;
 
-			if(curr_x <= best_x && curr_y >= best_y)
+			if(curr_x < best_x)
+			{
+				best_x = curr_x;
+				best_y = curr_y;
+			}
+			else if(curr_x == best_x && curr_y > best_y)
 			{
 				best_x = curr_x;
 				best_y = curr_y;
@@ -355,7 +364,9 @@ pair<int,int> gomoku::winning_col(int player)
 			best_col.push_back(index_and_count.first);
 		}
 	}
-
+	pair<int,int> fail_return = std::pair<int,int>(-1,-1);
+	if(best_col.size() == 0)
+		return fail_return;
 	// //std::cout << "best_col.size() = " << best_col.size() << std::endl;
 	//If there are more than one good row, we pick the lowest and leftmost
 	if(best_col.size() > 1)
@@ -367,14 +378,19 @@ pair<int,int> gomoku::winning_col(int player)
 			int curr_y = best_col[i] / BOARD_DIM;
 			int curr_x = best_col[i] % BOARD_DIM;
 
-			if(curr_x <= best_x && curr_y >= best_y)
+			if(curr_x < best_x)
+			{
+				best_x = curr_x;
+				best_y = curr_y;
+			}
+			else if(curr_x == best_x && curr_y > best_y)
 			{
 				best_x = curr_x;
 				best_y = curr_y;
 			}
 		}
 
-		for(int i = 0; i < 5 && best_y + i < BOARD_DIM; i++)
+		for(int i = 4; i > -1; i--)
 		{
 			if(board[best_y + i][best_x] == '.')
 			{
@@ -390,14 +406,14 @@ pair<int,int> gomoku::winning_col(int player)
 	int best_x = best_col[0]%BOARD_DIM;
 	int best_y = best_col[0]/BOARD_DIM;
 
-	for(int i = 0; i < 5 && best_y + i < BOARD_DIM; i++)
+	for(int i = 4; i > -1; i--)
+	{
+		if(board[best_y + i][best_x] == '.')
 		{
-			if(board[best_y + i][best_x] == '.')
-			{
-				best_y = best_y + i;
-				break;
-			}
+			best_y = best_y + i;
+			break;
 		}
+	}
 
 	std::pair<int,int> return_pair(best_y*BOARD_DIM + best_x,best_player_count);
 	return return_pair;
@@ -451,6 +467,11 @@ pair<int,int> gomoku::winning_ldiag(int player)
 			best_ldiag.push_back(winning_ldiags[i].first);
 		}
 	}
+
+	pair<int,int> fail_return = std::pair<int,int>(-1,-1);
+	if(best_ldiag.size() == 0)
+		return fail_return;
+
 	if(best_ldiag.size() > 1)
 	{
 		int best_x = best_ldiag[0] % BOARD_DIM;
@@ -459,7 +480,12 @@ pair<int,int> gomoku::winning_ldiag(int player)
 		{
 			int curr_x = best_ldiag[i] % BOARD_DIM;
 			int curr_y = best_ldiag[i] / BOARD_DIM;
-			if(curr_x <= best_x && curr_y >= best_y)
+			if(curr_x < best_x)
+			{
+				best_x = curr_x;
+				best_y = curr_y;
+			}
+			else if(curr_x == best_x && curr_y > best_y)
 			{
 				best_x = curr_x;
 				best_y = curr_y;
@@ -541,6 +567,9 @@ pair<int,int> gomoku::winning_rdiag(int player)
 			best_rdiag.push_back(winning_rdiags[i].first);
 		}
 	}
+	pair<int,int> fail_return = std::pair<int,int>(-1,-1);
+	if(best_rdiag.size() == 0)
+		return fail_return;
 	if(best_rdiag.size() > 1)
 	{
 		int best_x = best_rdiag[0] % BOARD_DIM;
@@ -549,11 +578,22 @@ pair<int,int> gomoku::winning_rdiag(int player)
 		{
 			int curr_x = best_rdiag[i] % BOARD_DIM;
 			int curr_y = best_rdiag[i] / BOARD_DIM;
-			if(curr_x <= best_x && curr_y >= best_y)
+			// if(curr_x <= best_x && curr_y >= best_y)
+			// {
+			// 	best_x = curr_x;
+			// 	best_y = curr_y;
+			// }
+			if(curr_x < best_x)
 			{
 				best_x = curr_x;
 				best_y = curr_y;
 			}
+			else if(curr_x == best_x && curr_y > best_y)
+			{
+				best_x = curr_x;
+				best_y = curr_y;
+			}
+
 		}
 
 		for(int i = 0; i < 5 && best_y + i < BOARD_DIM && best_x + i < BOARD_DIM; i++)

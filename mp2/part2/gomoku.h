@@ -17,8 +17,8 @@ class gomoku{
 		//Relating to the players of the game
 		int prev_player;
 		int curr_player;
-		int player_one_char = 0;
-		int player_two_char = 0;
+		int player_one_char = 1;
+		int player_two_char = 1;
 
 	public:
 

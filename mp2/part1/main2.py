@@ -81,10 +81,10 @@ while not creatq.empty():
         num=num+1
         x = TreeNode(curr, num,lvl+1,l)
         creatq.put(x)
-        print(curr,num)
+        #print(curr,num)
         curr_beg.addchild(tup,edges[(curr_beg.currl,l)],l)
         graph[tup] = x
-print(graph[tuple(facts)].level)
+#print(graph[tuple(facts)].level)
 
 #PUT LETTER IN TUPLE FOR CHILD NODE
 
@@ -118,7 +118,8 @@ while not frontier.empty():
     sq=curr[2]
     curwt=curr[3]
     if curr[1].id == facts:
-        print(sq, curwt)
+        print("Lowest num of factories:")
+        print(sq, len(sq), curwt)
         break
     for neighb, wt in curr[1].children.items():
         for n, m in graph.items():
@@ -136,7 +137,8 @@ while not frontier.empty():
     sq=curr[2]
     curwt=curr[3]
     if curr[1].id == facts:
-        print(sq, curwt)
+        print("Lowest num of miles")
+        print(sq, len(sq), curwt)
         break
     for neighb, wt in curr[1].children.items():
         for n, m in graph.items():

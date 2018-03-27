@@ -1,6 +1,6 @@
 import support
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 class bayesian_model:
 
@@ -21,18 +21,16 @@ class bayesian_model:
 
 		print("Training the model.... ")
 
-		constant = 0.1
+		constant = 10
 
-		model = np.zeros((self.num_labels, 32, 32))
+		model = np.zeros((self.num_labels, 32, 32)) # P(F_ij = 1| every class)
 		
 		num_per_class = self.priors * self.num_images
 
 		for image in np.arange(self.num_images):
-			for row in np.arange(32):
-				for col in np.arange(32):
-					model[train_labels[image], row, col] += train_data[image, row, col]
+			model[train_labels[image][0], :, :] += train_data[image, :, :]
 
-		smoothed_model = self.apply_laplace_smoothing(model, constant)
+		smoothed_model = self.apply_laplace_smoothing(model, constant, num_per_class)
 
 		for label in np.arange(self.num_labels):
 			for row in np.arange(32):
@@ -41,16 +39,10 @@ class bayesian_model:
 						print("Still got a zero")
 
 		for label in np.arange(self.num_labels):
-			smoothed_model[label,:,:] = (smoothed_model[label,:,:]/ (num_per_class[label] + constant*2))
-
-		# for label in np.arange(self.num_labels):
-		# 	for row in np.arange(32):
-		# 		for col in np.arange(32):
-		# 			print(smoothed_model[label,row,col])
+			smoothed_model[label,:,:] = smoothed_model[label,:,:]/ (num_per_class[label][0])
 
 		print("Done!")
 		return smoothed_model
-
 
 	def get_priors(self, train_labels):
 		'''
@@ -59,14 +51,15 @@ class bayesian_model:
 		'''
 		priors = np.zeros((self.num_labels, 1))
 		for i in np.arange(self.num_images):
-			priors[train_labels[i]] += 1
+			priors[train_labels[i][0]] += 1
 		priors = priors*(1/self.num_images)
 		return priors
 	
-	def apply_laplace_smoothing(self, model, constant):
+	def apply_laplace_smoothing(self, model, constant, num_per_class):
 		'''
 		INPUT: model - (np.array) - (labels, row, cols) - model without laplace smoothing applied
 			   constant - float - the small k to add
+			   num_per_class - np.array - (labels, 1) - number of training token per class
 		OUTPUT: smoothed_model - (np.array) - (labels, row, cols) - model with laplace smoothing applied
 		'''
 
@@ -76,6 +69,7 @@ class bayesian_model:
 			for row in np.arange(32):
 				for col in np.arange(32):
 					model[label, row, col] += constant
+					num_per_class[label][0] += (constant * 2)
 		return model
 
 
@@ -89,7 +83,7 @@ class bayesian_model:
 		for image in np.arange(test_data.shape[0]):
 			scores = np.zeros((self.num_labels,1))
 			for label in np.arange(self.num_labels):
-				scores[label][0] += np.log(self.priors[label])
+				scores[label][0] += np.log(self.priors[label][0])
 				for row in np.arange(32):
 					for col in np.arange(32):
 						if(test_data[image,row,col] == 1):
@@ -97,7 +91,7 @@ class bayesian_model:
 						elif(test_data[image,row,col] == 0):
 							scores[label][0] += np.log(1 - self.model[label,row,col])
 						else:
-							print("Huh? :-O Shunu hada ya habiti?")
+							print("Huh? :-O Shunu hada ya habibti?")
 			label = np.argmax(scores)
 			# print(label)
 			predicted_labels[image][0] = label
@@ -109,15 +103,93 @@ class bayesian_model:
 		'''
 		INPUT: predicted_labels: - (np.array) - (images,1) - predicted labels for each image
 		       test_labels - (np.array) - (images,1) - true labels for each image
-		OUTPUT: accuracy: - the number of labels predicted correctly
+		OUTPUT: accuracy: - the accuracy for each digit
+				confusion_matrix - a 10x10 matrix that contain which labels were confused for another by the model
 		'''
-		print("predicted_labels",predicted_labels.shape[0])
-		print("test_labels", test_labels.shape[0])
-		num_correct = 0
+		# print("predicted_labels",predicted_labels.shape[0])
+		# print("test_labels", test_labels.shape[0])
+		# num_correct = 0
+		# for i in np.arange(predicted_labels.shape[0]):
+		# 	if(predicted_labels[i][0] == test_labels[i][0]):
+		# 		num_correct += 1
+		# print("Accuracy: ", num_correct/predicted_labels.shape[0])
+		confusion_matrix = np.zeros((10,10))
+		accuracy_array = np.zeros(10)
+		count_array = np.zeros(10)
 		for i in np.arange(predicted_labels.shape[0]):
+			count_array[test_labels[i][0]] += 1
 			if(predicted_labels[i][0] == test_labels[i][0]):
-				num_correct += 1
-		print("Accuracy: ", num_correct/predicted_labels.shape[0])
+				accuracy_array[test_labels[i][0]] += 1
+			confusion_matrix[test_labels[i][0]][int(predicted_labels[i][0])] += 1
+
+		for i in np.arange(10):
+			print("For digit:", i, " accuracy is:", accuracy_array[i]/count_array[i])
+
+		# for row in np.arange(10):
+		# 	for col in np.arange(10):
+		# 		confusion_matrix[row][col] /= (count_array[row]/100)
+		# 		print(int(confusion_matrix[row][col]), end = '')
+		# 		print(' ', end = '')
+		# 	print('\n')
+
+		return confusion_matrix
+
+
+	def odds_ratios(self, confusion_matrix):
+		'''
+		INPUT: confusion_matrix - (10x10 np.array) - the percentage of class r misclassified as class in c in the test set
+		OUTPUT: odds_ratios for each pair of the four classes with the highest percentages in the confusion matrix
+				heat maps of the log-likelihood for each of the aformentioned pairs
+		'''
+
+		error_rates = np.zeros(10)
+		for row in np.arange(10):
+			error_rates[row] += (np.sum(confusion_matrix[row,:]) - confusion_matrix[row][row])
+
+		 
+		sorted_error_labels = np.argsort(error_rates)
+		top_four = sorted_error_labels[6:]
+
+		odds_ratios = np.zeros((12, 32, 32))
+
+		pairs_top_four = []
+		for pair_1 in np.arange(4):
+			for pair_2 in np.arange(4):
+				if(pair_1 != pair_2):
+					pairs_top_four.append([pair_1,pair_2])	
+
+		counter = 111
+		for pair in np.arange(1):
+			print(pairs_top_four[pair][0])
+			print(pairs_top_four[pair][1])
+			odds_ratios[pair, :, :]	= self.model[pairs_top_four[pair][0], :, :]/self.model[pairs_top_four[pair][1], :, :]
+			fig = plt.figure(pair)
+			digit1 = pairs_top_four[pair][0]
+			digit2 = pairs_top_four[pair][1]
+			fig.subplot(counter)
+			fig.imshow(np.log(self.model[digit1, :, :]), cmap = 'hot', interpolation = 'nearest')
+			counter += 10
+			fig.subplot(counter)
+			fig.imshow(np.log(self.model[digit2, :, :]), cmap = 'hot', interpolation = 'nearest')
+			counter += 10
+			fig.show(pair)
+
+
+		# Show heat maps for each pair - first for each componenet of the pair then for both the odd_ratio matrices
+
+		# for pair in np.arange(12):
+		# 	digit1 = pairs_top_four[pair][0]
+		# 	digit2 = pairs_top_four[pair][1]
+
+		# 	plt.figure(pair)
+		# 	plt.imshow(model[digit1, :, :], cmap = 'hot', interpolation = 'nearest')
+		# 	plt.imshow(model[digit2, :, :], cmap = 'hot', interpolation = 'nearest')
+		# 	plt.imshow(odds_ratios[pair,:,:], cmap = 'hot', interpolation = 'nearest')
+		# 	plt.show(pair)
+
+
+
+
 
 
 

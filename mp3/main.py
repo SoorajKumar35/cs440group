@@ -11,7 +11,10 @@ if __name__ == '__main__':
 
 	predicted_labels = model.predict(test_data)
 
-	model.accuracy(predicted_labels, test_labels)
+	confusion_matrix = model.accuracy(predicted_labels, test_labels)
+
+	model.odds_ratios(confusion_matrix)
+
 
 
 

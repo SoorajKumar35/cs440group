@@ -4,7 +4,7 @@ import pickle as pk
 
 class bayesian_model_v2:
 
-	def __init__(self, train_data, train_labels, row_feat = 2, col_feat = 2, disjoint = True):
+	def __init__(self, train_data, train_labels, row_feat, col_feat, constant ,disjoint = True):
 
 		self.num_images = train_data.shape[0]
 		self.image_rows = train_data.shape[1]
@@ -14,6 +14,7 @@ class bayesian_model_v2:
 		self.feat_row_len = row_feat
 		self.feat_col_len = col_feat
 		self.values_per_feat = 2**(row_feat * col_feat)
+		self.constant = constant
 		self.model = self.train_model_v2(train_data, train_labels, disjoint)
 
 	def train_model_v2(self, train_data, train_labels, disjoint):
@@ -26,21 +27,23 @@ class bayesian_model_v2:
 		OUTPUT: model: (np.array) - (labels, row, cols)
 		'''
 
-		print("Training the model.... ")
+		# print("Training the model.... ")
 
-		constant = 2.5
+		constant = self.constant
 
 		if(disjoint):
 			self.total_row_features = 32/self.feat_row_len
 			self.total_col_features = 32/self.feat_col_len
 			self.total_feats_per_image = self.total_row_features * self.total_col_features
-			image_features = self.convert_to_features(train_data, disjoint)
-			print("Created the image features: ")
-			# image_features = pk.load(open('saved_image_features.txt', 'rb'))
-			model = self.disjoint_training(image_features, train_labels)
-			print("Created the model: ")
+
+			image_features, model = self.convert_to_features(train_data, disjoint, train_labels)
+
+			# print("Created the image features: ")
+			# print("Created the model: ")
+
 			smoothed_model = self.apply_laplace_smoothing(model,constant)
-			print("Smoothed the model: ")
+
+			# print("Smoothed the model: ")
 			return smoothed_model
 		else:
 			self.total_row_features = 0
@@ -51,12 +54,15 @@ class bayesian_model_v2:
 				if(i + self.feat_col_len <= self.image_cols):
 					self.total_col_features += 1
 			self.total_feats_per_image = self.total_row_features * self.total_col_features
-			image_features = self.convert_to_features(train_data, disjoint)
-			print("Created the image features: ")
-			model = self.overlap_training(image_features, train_labels)
-			print("Created the model: ")
+
+			image_features, model = self.convert_to_features(train_data, disjoint, train_labels)
+
+			# print("Created the image features: ")
+			# print("Created the model: ")
+
 			smoothed_model = self.apply_laplace_smoothing(model, constant)
-			print("Smoothed the model: ")
+
+			# print("Smoothed the model: ")
 			return smoothed_model
 
 	def get_priors(self, train_labels):
@@ -72,23 +78,14 @@ class bayesian_model_v2:
 
 		return priors
 
-	def disjoint_training(self, image_features, train_labels):
-		"""
-		INPUT: image_features - (np.array) - (images, feats_per_image)
-		OUTPUT: model - (np.array) - (class, feats_per_image)
-		"""
+	def model_training(self, image_features, train_labels):
 		model = np.zeros((self.num_labels, int(self.total_feats_per_image), self.values_per_feat))
 		for image in np.arange(image_features.shape[0]):
-			model[train_labels[image], :, :] += image_features[image, :, :]
-		return model
-
-	def overlap_training(self, image_features, train_labels):
-		model = np.zeros((self.num_labels, int(self.total_feats_per_image), self.values_per_feat))
-		for image in np.arange(image_features.shape[0]):
-			print(image)
+			# print(image)
 			for feat in np.arange(self.total_feats_per_image):
-				val_idx = np.argmax(image_features[image, feat, :])
-				model[train_labels[image], feat, val_idx] += 1
+				for val in np.arange(self.values_per_feat):
+					model[train_labels[image], int(feat), val] += image_features[image, int(feat), val]
+		# model[train_labels[image], :, :] += image_features[image, :, :]
 		return model
 
 	def apply_laplace_smoothing(self, model, constant):
@@ -96,15 +93,16 @@ class bayesian_model_v2:
 		:param model: (np.array) - (labels, features_per_image)
 		:return: smoothed_model: (np.array) - (labels, features_per_image)
 		"""
-		for label in np.arange(self.num_labels):
-			for feat_num in np.arange(self.total_feats_per_image):
-				for val_idx in np.arange(self.values_per_feat):
-					model[label, int(feat_num), val_idx] += constant
-					self.examples_per_class[label] += (self.values_per_feat * constant)
+		# for label in np.arange(self.num_labels):
+		# 	for feat_num in np.arange(self.total_feats_per_image):
+		# 		for val_idx in np.arange(self.values_per_feat):
+		# 			model[label, int(feat_num), val_idx] += constant
+		# 			self.examples_per_class[label] += (self.values_per_feat * constant)
 
 		for label in np.arange(self.num_labels):
+			model[label, : , :] += constant
+			self.examples_per_class[label] += (constant * self.values_per_feat * (self.total_feats_per_image * self.values_per_feat))
 			model[label, :, :] /= self.examples_per_class[label]
-
 		return model
 
 	def convert_to_value(self, feature):
@@ -117,54 +115,104 @@ class bayesian_model_v2:
 		value = int("".join(str(int(x)) for x in rev_feature),2)
 		return value
 
-	def convert_to_features(self, image_data, disjoint):
+	def convert_to_features(self, image_data, disjoint, train_labels):
 		"""
 		:param image_data:
 			   disjoint:
 		:return:
 		"""
-
+		model = np.zeros((self.num_labels, int(self.total_feats_per_image), self.values_per_feat))
 		if disjoint:
 			image_features = np.zeros((image_data.shape[0], int(self.total_feats_per_image), self.values_per_feat))
 			start_row_idx = np.arange(0,32,self.feat_row_len)
 			start_col_idx = np.arange(0,32,self.feat_col_len)
 			for image in np.arange(image_data.shape[0]):
+				# print(image)
 				feature_count = 0
 				for row_idx in start_row_idx:
 					for col_idx in start_col_idx:
 						value = self.convert_to_value(image_data[image, row_idx:row_idx+ self.feat_row_len, col_idx:col_idx + self.feat_col_len].flatten())
 						image_features[image, feature_count, value] += 1
+						model[train_labels[image],feature_count, value] += 1
 						feature_count += 1
 		else:
-			image_features = np.zeros((image_data.shape[0], self.total_feats_per_image, self.values_per_feat))
+			image_features = np.zeros((image_data.shape[0], int(self.total_feats_per_image), self.values_per_feat))
 			start_row_idx = np.arange(self.image_rows - self.feat_row_len + 1)
 			start_col_idx = np.arange(self.image_cols - self.feat_col_len + 1)
 			for image in np.arange(image_data.shape[0]):
+				# print(image)
 				feature_count = 0
 				for row_idx in start_row_idx:
 					for col_idx in start_col_idx:
 						value = self.convert_to_value(image_data[image, row_idx:row_idx + self.feat_row_len, col_idx:col_idx + self.feat_col_len].flatten())
 						image_features[image, feature_count, value] += 1
+						model[int(train_labels[image]),feature_count,value] += 1
 						feature_count += 1
-		return image_features
+		return image_features, model
 
-	def predict(self, test_data, disjoint):
+	def get_features_and_predict(self, test_data, disjoint):
 		"""
-		:param: test_data - np.array - (images, rows, cols)
-		:return: predicted_labels - np.array - (images)
+		:param test_data:
+		:param disjoint:
+		:return:
 		"""
-		print("Predicting: ")
-		test_features = self.convert_to_features(test_data, disjoint)
 		predicted_labels = np.zeros(test_data.shape[0])
-		for image in np.arange(test_data.shape[0]):
-			scores = np.zeros(self.num_labels)
-			scores = np.reshape(scores, (scores.shape[0],1))
-			scores[:] += np.log(self.priors)
-			for feature in np.arange(self.total_feats_per_image):
-				val_idx = np.argmax(test_features[image, int(feature), :])
-				scores[:] += np.reshape(np.log(self.model[:, int(feature), val_idx]), (self.num_labels, 1))
-			predicted_labels[image] = np.argmax(scores)
-		return predicted_labels
+		if disjoint:
+			image_features = np.zeros((test_data.shape[0], int(self.total_feats_per_image), self.values_per_feat))
+			start_row_idx = np.arange(0, 32, self.feat_row_len)
+			start_col_idx = np.arange(0, 32, self.feat_col_len)
+			for image in np.arange(test_data.shape[0]):
+				# print(image)
+				feature_count = 0
+				scores = np.zeros((self.num_labels, 1))
+				scores[:] += np.log(self.priors)
+				for row_idx in start_row_idx:
+					for col_idx in start_col_idx:
+						value = self.convert_to_value(test_data[image, row_idx:row_idx + self.feat_row_len, col_idx:col_idx + self.feat_col_len].flatten())
+						image_features[image, feature_count, value] += 1
+						scores[:] += np.reshape(np.log(self.model[:, feature_count, value]), (self.num_labels, 1))
+						feature_count += 1
+				pr_label = np.argmax(scores)
+				predicted_labels[image] = pr_label
+		else:
+			image_features = np.zeros((test_data.shape[0], int(self.total_feats_per_image), self.values_per_feat))
+			start_row_idx = np.arange(self.image_rows - self.feat_row_len + 1)
+			start_col_idx = np.arange(self.image_cols - self.feat_col_len + 1)
+			for image in np.arange(test_data.shape[0]):
+				# print(image)
+				feature_count = 0
+				scores = np.zeros((self.num_labels, 1))
+				scores[:] += np.log(self.priors)
+				for row_idx in start_row_idx:
+					for col_idx in start_col_idx:
+						value = self.convert_to_value(test_data[image, row_idx:row_idx + self.feat_row_len, col_idx:col_idx + self.feat_col_len].flatten())
+						image_features[image, feature_count, value] += 1
+						scores[:] += np.reshape(np.log(self.model[:, feature_count, value]), (self.num_labels, 1))
+						feature_count += 1
+				pr_label = np.argmax(scores)
+				predicted_labels[image] = pr_label
+
+		return image_features,predicted_labels
+
+	# def predict(self, test_data, disjoint):
+	# 	"""
+	# 	:param: test_data - np.array - (images, rows, cols)
+	# 	:return: predicted_labels - np.array - (images)
+	# 	"""
+	# 	print("Predicting: ")
+	# 	# test_features, extra = self.convert_to_features(test_data, disjoint, np.zeros(test_data.shape[0]))
+	# 	test_features, predicted_labels = self.get_features_and_predict(test_data. disjoint)
+	# 	predicted_labels = np.zeros(test_data.shape[0])
+	# 	for image in np.arange(test_data.shape[0]):
+	# 		# print(image)
+	# 		scores = np.zeros(self.num_labels)
+	# 		scores = np.reshape(scores, (scores.shape[0],1))
+	# 		scores[:] += np.log(self.priors)
+	# 		for feature in np.arange(self.total_feats_per_image):
+	# 			val_idx = np.argmax(test_features[image, int(feature), :])
+	# 			scores[:] += np.reshape(np.log(self.model[:, int(feature), val_idx]), (self.num_labels, 1))
+	# 		predicted_labels[image] = np.argmax(scores)
+	# 	return predicted_labels
 
 	def accuracy(self, test_labels, predicted_labels):
 		"""
@@ -183,8 +231,8 @@ class bayesian_model_v2:
 				total_count += 1
 			confusion_matrix[int(test_labels[i])][int(predicted_labels[i])] += 1
 
-		print('Total Acc:', total_count/test_labels.shape[0])
-		for i in np.arange(10):
-			print("For digit:", i, " accuracy is:", accuracy_array[i] / count_array[i])
+		print('Total Acc:', total_count/test_labels.shape[0], ' for row_len = ', self.feat_row_len, 'for col_len', self.feat_col_len)
+		# for i in np.arange(10):
+		# 	print("For digit:", i, " accuracy is:", accuracy_array[i] / count_array[i])
 
 		return confusion_matrix

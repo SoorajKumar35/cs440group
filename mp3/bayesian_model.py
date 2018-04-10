@@ -103,13 +103,15 @@ class bayesian_model:
 				confusion_matrix - a 10x10 matrix that contain which labels were confused for another by the model
 		'''
 
-		# for label in np.arange(self.num_labels):
-		# 	curr_idxs = np.where(test_labels == label)[0]
-		# 	curr_scores = self.score_per_image[curr_idxs]
-		# 	sorted_scores_idxs = np.argsort(curr_scores)
-		# 	idx_of_zero = np.where(sorted_scores_idxs == 0)[0]
-		# 	idx_of_last = np.where(sorted_scores_idxs == sorted_scores_idxs.shape[0]-1)[0]
-		# 	print("For label",label,"the lowest prob is:", curr_idxs[idx_of_zero],"while the highest is:",curr_idxs[idx_of_last])
+		for label in np.arange(self.num_labels):
+			curr_idxs = np.where(test_labels == label)[0]
+			curr_scores = self.score_per_image[curr_idxs]
+			sorted_scores_idxs = np.argsort(curr_scores)
+			# idx_of_zero = np.where(sorted_scores_idxs == 0)[0]
+			idx_of_zero = sorted_scores_idxs[0]
+			# idx_of_last = np.where(sorted_scores_idxs == sorted_scores_idxs.shape[0]-1)[0]
+			idx_of_last = sorted_scores_idxs[sorted_scores_idxs.shape[0]-1]
+			print("For label",label,"the lowest prob is:", curr_idxs[idx_of_zero],"while the highest is:",curr_idxs[idx_of_last])
 
 		print('\n')
 		confusion_matrix = np.zeros((self.num_labels, self.num_labels))
@@ -125,15 +127,15 @@ class bayesian_model:
 
 		print('Total Accuracy:', total_correct/test_labels.shape[0])
 		print('\n')
-		# for i in np.arange(self.num_labels):
-		# 	print("For digit:", i, " accuracy is:", accuracy_array[i] / count_array[i])
-        #
-		# for row in np.arange(self.num_labels):
-		# 	for col in np.arange(self.num_labels):
-		# 		confusion_matrix[row][col] /= (count_array[row]/100)
-		# 		print(int(confusion_matrix[row][col]), end = '')
-		# 		print(' ', end = '')
-		# 	print('\n')
+		for i in np.arange(self.num_labels):
+			print("For digit:", i, " accuracy is:", accuracy_array[i] / count_array[i])
+
+		for row in np.arange(self.num_labels):
+			for col in np.arange(self.num_labels):
+				confusion_matrix[row][col] /= (count_array[row]/100)
+				print(int(confusion_matrix[row][col]), end = '')
+				print(' ', end = '')
+			print('\n')
 
 		return confusion_matrix
 
@@ -151,25 +153,23 @@ class bayesian_model:
 		sorted_error_labels = np.argsort(error_rates)
 		top_four = sorted_error_labels[6:]
 
-		odds_ratios = np.zeros((12, self.rows, self.cols))
-
-		pairs_top_four = []
-		for pair_1 in np.arange(4):
-			for pair_2 in np.arange(4):
-				if (pair_1 != pair_2):
-					pairs_top_four.append([pair_1, pair_2])
-
-		for pair in range(len(pairs_top_four)):
-			first_num = pairs_top_four[pair][0]
-			second_num = pairs_top_four[pair][1]
-			odds_ratios[pair, :, :] = np.log(self.model[first_num, :, :]) - np.log(self.model[second_num, :, :])
-
+		pairs = []
+		for i in np.arange(4):
+			row = top_four[i]
+			pair_2 = -1
+			largest = -np.Inf
+			for col in np.arange(10):
+				if(row != col):
+					if confusion_matrix[row][col] > largest:
+						largest = confusion_matrix[row][col]
+						pair_2 = col
+			pairs += [[row,pair_2]]
 
 		figure_count = 1
-		for pair in range(len(pairs_top_four)):
-			subplot_count = 311
-			first_num = pairs_top_four[pair][0]
-			second_num = pairs_top_four[pair][1]
+		for pair_num in range(len(pairs)):
+			subplot_count = 411
+			first_num = pairs[pair_num][0]
+			second_num = pairs[pair_num][1]
 
 			plt.figure(figure_count)
 
@@ -184,11 +184,18 @@ class bayesian_model:
 			subplot_count += 1
 
 			plt.subplot(subplot_count)
-			plt.imshow(odds_ratios[pair, :, :])
+			plt.imshow(np.log(self.model[first_num, :, :]) - np.log(self.model[second_num, :, :]))
+
+			subplot_count += 1
+
+			plt.subplot(subplot_count)
+			plt.imshow(np.log(self.model[second_num, :, :]) - np.log(self.model[first_num, :, :]))
 
 			plt.show(block=False)
 
 			figure_count += 1
 
 		print("Stop right there sir")
+
+		# for row in np.arange(confusion_matrix.shape[0]):
 

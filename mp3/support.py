@@ -59,7 +59,6 @@ def read_face_data(input_file_dir, label_file_dir):
 	face_data = np.zeros((examples_count, 70, 60))
 	label_array = np.array(label_list)
 	for i in np.arange(label_array.shape[0]):
-		print(i)
 		face_data[i,:,:] = data_array[i*70:(i+1)*70, :]
 	return face_data, label_array
 

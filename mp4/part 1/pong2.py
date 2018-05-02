@@ -39,7 +39,6 @@ class state:
         if (self.b_x >= 1):
             if self.p_y <= self.b_y <= self.p_y + 0.2:
                 self.score += 1
-                self.hit = True
                 self.b_x = 2 * self.p_x - self.b_x
                 U = random.uniform(-0.015, 0.015)
                 V = random.uniform(-0.03, 0.03)
@@ -170,7 +169,7 @@ class state:
             self.q_table[(state, action)] = prev_Q + (
                 (float(ALPHA) / float(ALPHA + self.N[(state, action)])) * (reward + (GAMMA * new_Q) - prev_Q))
 
-    def update(self):
+    def qtd_train(self):
 
         reward = self.hit_paddle()
         new_state = self.get_state()

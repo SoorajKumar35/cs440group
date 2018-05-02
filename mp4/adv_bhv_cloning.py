@@ -136,7 +136,7 @@ adv_exp_state = adv_exp_state - mean
 adv_exp_state = adv_exp_state / sdv
 # print(adv_exp_state)
 
-w1, w2, w3, w4, b1, b2, b3, b4, loss, acc, conf = adv_minibatch_gd(adv_exp_state, adv_exp_decision, 0.1, 100, 256, 500)
+w1, w2, w3, w4, b1, b2, b3, b4, loss, acc, conf = adv_minibatch_gd(adv_exp_state, adv_exp_decision, 0.5, 100, 256, 1000)
 plt.plot(loss)
 plt.ylabel('advantage Loss')
 plt.xlabel('advantage epoch')

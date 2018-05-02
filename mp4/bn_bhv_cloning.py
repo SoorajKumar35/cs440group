@@ -327,21 +327,22 @@ def test_nn(X, W1, W2, W3, W4, b1, b2, b3, b4, gamma1, gamma2, gamma3, beta1, be
 
 
 def init_params(unit_num):
-    W1 = (np.random.rand(5, unit_num) - 0.5)
-    W2 = (np.random.rand(unit_num, unit_num) - 0.5)
-    W3 = (np.random.rand(unit_num, unit_num) - 0.5)
-    W4 = (np.random.rand(unit_num, 3) - 0.5)
-    gamma1 = np.random.rand(unit_num) - 0.5
-    gamma2 = np.random.rand(unit_num) - 0.5
-    gamma3 = np.random.rand(unit_num) - 0.5
+    weight_scale = 0.01
+    W1 = (np.random.rand(5, unit_num) * weight_scale)
+    W2 = (np.random.rand(unit_num, unit_num) * weight_scale)
+    W3 = (np.random.rand(unit_num, unit_num)  * weight_scale)
+    W4 = (np.random.rand(unit_num, 3) * weight_scale)
+    gamma1 = np.random.rand(unit_num) * weight_scale
+    gamma2 = np.random.rand(unit_num) * weight_scale
+    gamma3 = np.random.rand(unit_num) * weight_scale
 
     b1 = np.zeros(unit_num)
     b2 = np.zeros(unit_num)
     b3 = np.zeros(unit_num)
     b4 = np.zeros(3)
-    beta1 = np.random.rand(unit_num) - 0.5
-    beta2 = np.random.rand(unit_num) - 0.5
-    beta3 = np.random.rand(unit_num) - 0.5
+    beta1 = np.random.rand(unit_num) * weight_scale
+    beta2 = np.random.rand(unit_num) * weight_scale
+    beta3 = np.random.rand(unit_num) * weight_scale
 
     return W1, W2, W3, W4, b1, b2, b3, b4, gamma1, gamma2, gamma3, beta1, beta2, beta3
 
